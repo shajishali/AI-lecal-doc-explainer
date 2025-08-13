@@ -136,7 +136,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <form id="uploadForm" enctype="multipart/form-data" action="/upload/" method="post">
+                        <form id="uploadForm" enctype="multipart/form-data" action="{% url 'main:upload_document' %}" method="post">
                             {% csrf_token %}
                             <div class="row">
                                 <div class="col-md-6">
@@ -343,32 +343,39 @@
 
         function updateFileDisplay(file) {
             const uploadArea = document.getElementById('uploadArea');
-            uploadArea.innerHTML = `
-                <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-                <h5>${file.name}</h5>
-                <p class="text-muted">Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetUploadArea()">
-                    <i class="fas fa-times me-1"></i>
-                    Remove
-                </button>
+            let details = document.getElementById('fileDetails');
+            if (!details) {
+                details = document.createElement('div');
+                details.id = 'fileDetails';
+                details.className = 'mt-3';
+                uploadArea.appendChild(details);
+            }
+            details.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fas fa-file-alt fa-2x text-success"></i>
+                    <div>
+                        <div><strong>${file.name}</strong></div>
+                        <div class="text-muted">Size: ${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                    </div>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetSelectedFile()">
+                            <i class="fas fa-times me-1"></i>
+                            Remove
+                        </button>
+                    </div>
+                </div>
             `;
         }
 
-        function resetUploadArea() {
+        function resetSelectedFile() {
             const fileInput = document.getElementById('documentFile');
             if (fileInput) {
                 fileInput.value = '';
             }
-            
-            // Reset the upload area display
-            const uploadArea = document.getElementById('uploadArea');
-            const icon = uploadArea.querySelector('i');
-            const title = uploadArea.querySelector('h5');
-            const subtitle = uploadArea.querySelector('p');
-            
-            if (icon) icon.className = 'fas fa-cloud-upload-alt fa-3x text-muted mb-3';
-            if (title) title.textContent = 'Drag & Drop your document here';
-            if (subtitle) subtitle.textContent = 'or';
+            const details = document.getElementById('fileDetails');
+            if (details) {
+                details.remove();
+            }
         }
 
         // Handle form submission

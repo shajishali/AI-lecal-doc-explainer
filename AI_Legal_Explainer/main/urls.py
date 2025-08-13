@@ -20,10 +20,13 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('test/', views.test, name='test'),
     path('document/<uuid:document_id>/', views.document_detail, name='document_detail'),
+    path('document/<uuid:document_id>/status/', views.document_processing_status, name='document_processing_status'),
     path('glossary/', views.glossary_view, name='glossary'),
     path('upload/', views.upload_document, name='upload_document'),
     path('test-upload/', views.test_upload, name='test_upload'),
     path('debug-upload/', views.debug_upload, name='debug_upload'),
+    path('simple-upload-test/', views.simple_upload_test, name='simple_upload_test'),
+    path('test-upload-page/', views.test_upload_page, name='test_upload_page'),
     
     # API endpoints
     path('api/', include(router.urls)),

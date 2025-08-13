@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Detail - AI Legal Explainer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .risk-high { color: #dc3545; }
+        .risk-medium { color: #ffc107; }
+        .risk-low { color: #28a745; }
+        .clause-card { margin-bottom: 1rem; }
+        .processing-status { font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'main:welcome' %}">
+                <i class="fas fa-balance-scale me-2"></i>
+                AI Legal Explainer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:glossary' %}">Glossary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:upload_document' %}">Upload Document</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <!-- Document Header -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            {{ document.title }}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type:</strong> {{ document.get_document_type_display }}</p>
+                                <p><strong>Uploaded:</strong> {{ document.uploaded_at|date:"F j, Y, g:i a" }}</p>
+                                <p><strong>File Size:</strong> {{ document.file_size|filesizeformat }}</p>
+                                <p><strong>Status:</strong> 
+                                    {% if document.is_processed %}
+                                        <span class="badge bg-success">Processed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Processing</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>File:</strong> <a href="{{ document.file.url }}" target="_blank">{{ document.file.name }}</a></p>
+                                {% if document.processed_at %}
+                                    <p><strong>Processed:</strong> {{ document.processed_at|date:"F j, Y, g:i a" }}</p>
+                                {% endif %}
+                                {% if document.clauses.count > 0 %}
+                                    <p><strong>Clauses Detected:</strong> {{ document.clauses.count }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Processing Status -->
+        {% if document.processing_logs.all %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            Processing Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for log in document.processing_logs.all %}
+                            <div class="col-md-4 mb-2">
+                                <div class="processing-status">
+                                    <strong>{{ log.get_step_display }}:</strong>
+                                    {% if log.status == 'completed' %}
+                                        <span class="badge bg-success">{{ log.get_status_display }}</span>
+                                    {% elif log.status == 'processing' %}
+                                        <span class="badge bg-warning">{{ log.get_status_display }}</span>
+                                    {% elif log.status == 'failed' %}
+                                        <span class="badge bg-danger">{{ log.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ log.get_status_display }}</span>
+                                    {% endif %}
+                                    {% if log.completed_at %}
+                                        <br><small>{{ log.completed_at|date:"g:i:s" }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Document Summary -->
+        {% if document.summary %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-text me-2"></i>
+                            AI-Generated Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Plain Language Summary:</h6>
+                        <p>{{ document.summary.plain_language_summary }}</p>
+                        
+                        {% if document.summary.legal_summary %}
+                        <h6>Legal Summary:</h6>
+                        <p>{{ document.summary.legal_summary }}</p>
+                        {% endif %}
+                        
+                        {% if document.summary.key_points %}
+                        <h6>Key Points:</h6>
+                        <ul>
+                            {% for point in document.summary.key_points %}
+                            <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        
+                        <p class="text-muted">
+                            <small>Generated on {{ document.summary.generated_at|date:"F j, Y, g:i a" }} | 
+                            {{ document.summary.word_count }} words</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Risk Analysis -->
+        {% if document.risk_analysis %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Risk Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Overall Risk Level:</h6>
+                                <p>
+                                    <span class="badge {% if document.risk_analysis.overall_risk_level == 'high' %}bg-danger{% elif document.risk_analysis.overall_risk_level == 'medium' %}bg-warning{% else %}bg-success{% endif %} fs-6">
+                                        {{ document.risk_analysis.get_overall_risk_level_display }}
+                                    </span>
+                                    (Score: {{ document.risk_analysis.overall_risk_score|floatformat:2 }})
+                                </p>
+                                
+                                <h6>Risk Breakdown:</h6>
+                                <ul class="list-unstyled">
+                                    <li><span class="risk-high">🔴</span> High Risk: {{ document.risk_analysis.high_risk_clauses_count }}</li>
+                                    <li><span class="risk-medium">🟠</span> Medium Risk: {{ document.risk_analysis.medium_risk_clauses_count }}</li>
+                                    <li><span class="risk-low">🟢</span> Low Risk: {{ document.risk_analysis.low_risk_clauses_count }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Analysis Summary:</h6>
+                                <p>{{ document.risk_analysis.analysis_summary }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Detected Clauses -->
+        {% if document.clauses.all %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-search me-2"></i>
+                            Detected Clauses
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% for clause in document.clauses.all %}
+                        <div class="clause-card card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="card-title">{{ clause.get_clause_type_display }}</h6>
+                                        <p class="card-text"><strong>Text:</strong> {{ clause.original_text|truncatewords:30 }}</p>
+                                        {% if clause.plain_language_summary %}
+                                        <p class="card-text"><strong>Explanation:</strong> {{ clause.plain_language_summary }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <span class="badge {% if clause.risk_level == 'high' %}bg-danger{% elif clause.risk_level == 'medium' %}bg-warning{% else %}bg-success{% endif %} fs-6">
+                                            {{ clause.get_risk_level_display }} Risk
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">Score: {{ clause.risk_score|floatformat:2 }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Document Text -->
+        {% if document.processed_text %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-align-left me-2"></i>
+                            Processed Document Text
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="border p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                            <pre style="white-space: pre-wrap; font-family: inherit;">{{ document.processed_text|truncatewords:500 }}</pre>
+                        </div>
+                        {% if document.processed_text|wordcount > 500 %}
+                        <p class="text-muted mt-2">
+                            <small>Showing first 500 words. Full text available in database.</small>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="row mt-4 mb-5">
+            <div class="col-12 text-center">
+                <a href="{% url 'main:upload_document' %}" class="btn btn-primary me-2">
+                    <i class="fas fa-upload me-2"></i>
+                    Upload Another Document
+                </a>
+                <a href="{% url 'main:home' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home me-2"></i>
+                    Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

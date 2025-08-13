@@ -421,7 +421,7 @@ def upload_document(request):
                 logger.error(f'Request content type: {request.content_type}')
                 logger.error(f'Request headers: {dict(request.headers)}')
                 logger.error(f'Request META: {dict(request.META)}')
-                logger.error(f'Request body length: {len(request.body) if hasattr(request, "body") else "N/A"}')
+
                 
                 from django.shortcuts import redirect
                 from django.contrib import messages
@@ -507,12 +507,156 @@ def upload_document(request):
                 
                 logger.info(f'Document uploaded successfully: {document.id} - {title}')
                 
-                # Redirect to home page with success message
-                from django.shortcuts import redirect
-                from django.contrib import messages
-                
-                messages.success(request, f'Document "{title}" uploaded successfully!')
-                return redirect('main:home')
+                # 🔥 NEW: Trigger AI processing after successful upload
+                try:
+                    logger.info(f'Starting AI processing for document {document.id}')
+                    
+                    # Start processing log
+                    processing_log = DocumentProcessingLog.objects.create(
+                        document=document,
+                        step='upload',
+                        status='processing'
+                    )
+                    logger.info(f'Created processing log: {processing_log.id}')
+                    
+                    # Extract text from document
+                    logger.info(f'Extracting text from document {document.id}')
+                    processor = DocumentProcessor()
+                    original_text = processor.extract_text(document)
+                    logger.info(f'Extracted {len(original_text)} characters from document')
+                    
+                    processed_text = processor.preprocess_text(original_text)
+                    logger.info(f'Preprocessed text: {len(processed_text)} characters')
+                    
+                    # Update document with extracted text
+                    document.original_text = original_text
+                    document.processed_text = processed_text
+                    document.is_processed = True
+                    document.processed_at = datetime.now()
+                    document.save()
+                    logger.info(f'Updated document {document.id} with extracted text')
+                    
+                    # Update processing log
+                    processing_log.status = 'completed'
+                    processing_log.completed_at = datetime.now()
+                    processing_log.save()
+                    logger.info(f'Completed text extraction step')
+                    
+                    # Generate summary
+                    logger.info(f'Starting summary generation for document {document.id}')
+                    summary_log = DocumentProcessingLog.objects.create(
+                        document=document,
+                        step='summarization',
+                        status='processing'
+                    )
+                    
+                    summarizer = AISummarizer()
+                    summary_data = summarizer.generate_summary(processed_text)
+                    logger.info(f'Generated summary with {summary_data.get("word_count", 0)} words')
+                    
+                    # Create or update document summary
+                    summary, created = DocumentSummary.objects.get_or_create(
+                        document=document,
+                        defaults=summary_data
+                    )
+                    if not created:
+                        for key, value in summary_data.items():
+                            setattr(summary, key, value)
+                        summary.save()
+                    
+                    summary_log.status = 'completed'
+                    summary_log.completed_at = datetime.now()
+                    summary_log.save()
+                    logger.info(f'Completed summary generation step')
+                    
+                    # Detect clauses
+                    logger.info(f'Starting clause detection for document {document.id}')
+                    clause_log = DocumentProcessingLog.objects.create(
+                        document=document,
+                        step='clause_detection',
+                        status='processing'
+                    )
+                    
+                    clause_detector = ClauseDetector()
+                    detected_clauses = clause_detector.detect_clauses(processed_text)
+                    logger.info(f'Detected {len(detected_clauses)} clauses')
+                    
+                    # Create clause objects
+                    for clause_data in detected_clauses:
+                        Clause.objects.create(
+                            document=document,
+                            **clause_data
+                        )
+                    
+                    clause_log.status = 'completed'
+                    clause_log.completed_at = datetime.now()
+                    clause_log.save()
+                    logger.info(f'Completed clause detection step')
+                    
+                    # Analyze risk
+                    logger.info(f'Starting risk analysis for document {document.id}')
+                    risk_log = DocumentProcessingLog.objects.create(
+                        document=document,
+                        step='risk_analysis',
+                        status='processing'
+                    )
+                    
+                    risk_analyzer = RiskAnalyzer()
+                    risk_data = risk_analyzer.analyze_document_risk(detected_clauses)
+                    logger.info(f'Risk analysis completed: {risk_data.get("overall_risk_level", "unknown")} risk')
+                    
+                    # Create or update risk analysis
+                    risk_analysis, created = RiskAnalysis.objects.get_or_create(
+                        document=document,
+                        defaults=risk_data
+                    )
+                    if not created:
+                        for key, value in risk_data.items():
+                            setattr(risk_analysis, key, value)
+                        risk_analysis.save()
+                    
+                    risk_log.status = 'completed'
+                    risk_log.completed_at = datetime.now()
+                    risk_log.save()
+                    logger.info(f'Completed risk analysis step')
+                    
+                    # Glossary processing
+                    logger.info(f'Starting glossary processing for document {document.id}')
+                    glossary_log = DocumentProcessingLog.objects.create(
+                        document=document,
+                        step='glossary_processing',
+                        status='processing'
+                    )
+                    
+                    # Highlight legal terms in processed text
+                    glossary_service = GlossaryService()
+                    highlighted_text = glossary_service.highlight_terms_in_text(processed_text)
+                    
+                    # Update document with highlighted text
+                    document.processed_text = highlighted_text
+                    document.save()
+                    
+                    glossary_log.status = 'completed'
+                    glossary_log.completed_at = datetime.now()
+                    glossary_log.save()
+                    logger.info(f'Completed glossary processing step')
+                    
+                    logger.info(f'AI processing completed successfully for document {document.id}')
+                    
+                    # Redirect to document detail page with success message
+                    from django.shortcuts import redirect
+                    from django.contrib import messages
+                    
+                    messages.success(request, f'Document "{title}" uploaded and analyzed successfully!')
+                    return redirect('main:document_detail', document_id=document.id)
+                    
+                except Exception as processing_error:
+                    logger.error(f'AI processing failed for document {document.id}: {str(processing_error)}')
+                    logger.error(f'Processing error details: {type(processing_error).__name__}: {str(processing_error)}')
+                    
+                    # Document was uploaded but processing failed
+                    messages.warning(request, f'Document uploaded but AI analysis failed: {str(processing_error)}. You can retry processing later.')
+                    return redirect('main:document_detail', document_id=document.id)
                 
             except ValidationError as validation_error:
                 logger.error(f'Validation error: {validation_error}')
@@ -589,3 +733,80 @@ def glossary_view(request):
     terms = LegalTerm.objects.all()
     context = {'terms': terms}
     return render(request, 'main/glossary.html', context)
+
+def document_processing_status(request, document_id):
+    """Show document processing status"""
+    document = get_object_or_404(Document, id=document_id)
+    processing_logs = document.processing_logs.all().order_by('started_at')
+    
+    context = {
+        'document': document,
+        'processing_logs': processing_logs,
+        'is_fully_processed': document.is_processed and document.summary and document.risk_analysis
+    }
+    return render(request, 'main/processing_status.html', context)
+
+def simple_upload_test(request):
+    """Simple test view for debugging upload issues"""
+    if request.method == 'POST':
+        try:
+            # Basic logging
+            logger.info(f'Simple upload test - Method: {request.method}')
+            logger.info(f'Simple upload test - Content-Type: {request.content_type}')
+            logger.info(f'Simple upload test - POST keys: {list(request.POST.keys())}')
+            logger.info(f'Simple upload test - FILES keys: {list(request.FILES.keys())}')
+            
+            # Check for file
+            if 'file' in request.FILES:
+                file = request.FILES['file']
+                logger.info(f'File received: {file.name}, size: {file.size}')
+                
+                # Try to read a small portion of the file
+                try:
+                    # Read first 100 characters for text files
+                    if file.name.endswith('.txt'):
+                        content = file.read(100).decode('utf-8', errors='ignore')
+                        logger.info(f'File content preview: {content[:50]}...')
+                    else:
+                        logger.info(f'Binary file received: {file.name}')
+                except Exception as read_error:
+                    logger.error(f'Error reading file: {str(read_error)}')
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'File received successfully',
+                    'filename': file.name,
+                    'size': file.size,
+                    'content_type': file.content_type
+                })
+            else:
+                logger.error('No file in request.FILES')
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No file received',
+                    'post_keys': list(request.POST.keys()),
+                    'files_keys': list(request.FILES.keys())
+                }, status=400)
+                
+        except Exception as e:
+            logger.error(f'Simple upload test error: {str(e)}')
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({'method': 'GET', 'message': 'Send POST request with file to test'})
+
+def test_upload_page(request):
+    """Serve the test upload page"""
+    from django.http import HttpResponse
+    from pathlib import Path
+    
+    test_file_path = Path(__file__).parent.parent / 'test_upload.html'
+    
+    if test_file_path.exists():
+        with open(test_file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HttpResponse(content, content_type='text/html')
+    else:
+        return HttpResponse('Test upload page not found. Please check the file path.', status=404)

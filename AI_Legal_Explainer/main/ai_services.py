@@ -11,24 +11,9 @@ from typing import List, Dict, Tuple, Optional
 from datetime import datetime
 import numpy as np
 
-# Make AI library imports optional to avoid startup errors
-try:
-    from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
-    TRANSFORMERS_AVAILABLE = True
-except ImportError:
-    TRANSFORMERS_AVAILABLE = False
-    logging.warning("Transformers library not available. AI summarization will use fallback methods.")
-
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
-    logging.warning("Google Generative AI library not available. Chat functionality will use fallback methods.")
-
+# Simplified imports - remove heavy AI libraries
 from django.conf import settings
 from .models import Document, Clause, RiskAnalysis, DocumentSummary, LegalTerm
-
 logger = logging.getLogger(__name__)
 
 class DocumentProcessor:
@@ -43,6 +28,8 @@ class DocumentProcessor:
             file_path = document.file.path
             file_extension = os.path.splitext(file_path)[1].lower()
             
+            logger.info(f"Extracting text from {file_extension} file: {file_path}")
+            
             if file_extension == '.txt':
                 return self._extract_text_from_txt(file_path)
             elif file_extension == '.pdf':
@@ -54,12 +41,22 @@ class DocumentProcessor:
                 
         except Exception as e:
             logger.error(f"Error extracting text from document {document.id}: {str(e)}")
-            raise
+            # Return a fallback text instead of crashing
+            return f"Error extracting text: {str(e)}. Please check the file format."
     
     def _extract_text_from_txt(self, file_path: str) -> str:
         """Extract text from TXT file"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read()
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        except UnicodeDecodeError:
+            # Try with different encoding if UTF-8 fails
+            try:
+                with open(file_path, 'r', encoding='latin-1') as file:
+                    return file.read()
+            except Exception as e:
+                logger.error(f"Failed to read TXT file {file_path}: {str(e)}")
+                return f"Error reading text file: {str(e)}"
     
     def _extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text from PDF file"""
@@ -68,12 +65,29 @@ class DocumentProcessor:
             text = ""
             with open(file_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
-                for page in pdf_reader.pages:
-                    text += page.extract_text() + "\n"
+                for page_num, page in enumerate(pdf_reader.pages):
+                    try:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text += page_text + "\n"
+                        else:
+                            logger.warning(f"Page {page_num + 1} returned no text")
+                    except Exception as page_error:
+                        logger.warning(f"Error extracting text from page {page_num + 1}: {str(page_error)}")
+                        continue
+            
+            if not text.strip():
+                return "PDF file appears to be empty or contains no extractable text."
+            
+            logger.info(f"Successfully extracted {len(text)} characters from PDF")
             return text
+            
         except ImportError:
             logger.error("PyPDF2 not installed. Please install it for PDF support.")
-            raise
+            return "PDF processing not available. Please install PyPDF2."
+        except Exception as e:
+            logger.error(f"Error processing PDF {file_path}: {str(e)}")
+            return f"Error processing PDF: {str(e)}"
     
     def _extract_text_from_docx(self, file_path: str) -> str:
         """Extract text from DOCX file"""
@@ -82,62 +96,63 @@ class DocumentProcessor:
             doc = DocxDocument(file_path)
             text = ""
             for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
+                if paragraph.text.strip():
+                    text += paragraph.text + "\n"
+            
+            if not text.strip():
+                return "DOCX file appears to be empty or contains no text."
+            
+            logger.info(f"Successfully extracted {len(text)} characters from DOCX")
             return text
+            
         except ImportError:
             logger.error("python-docx not installed. Please install it for DOCX support.")
-            raise
+            return "DOCX processing not available. Please install python-docx."
+        except Exception as e:
+            logger.error(f"Error processing DOCX {file_path}: {str(e)}")
+            return f"Error processing DOCX: {str(e)}"
     
     def preprocess_text(self, text: str) -> str:
         """Clean and preprocess extracted text"""
-        # Remove extra whitespace
-        text = re.sub(r'\s+', ' ', text)
-        # Remove special characters but keep legal terms
-        text = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]', '', text)
-        # Normalize line breaks
-        text = text.replace('\n', ' ').replace('\r', ' ')
-        return text.strip()
+        try:
+            if not text or len(text.strip()) < 10:
+                return "Document contains insufficient text for analysis."
+            
+            # Remove extra whitespace
+            text = re.sub(r'\s+', ' ', text)
+            # Remove special characters but keep legal terms
+            text = re.sub(r'[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]', '', text)
+            # Normalize line breaks
+            text = text.replace('\n', ' ').replace('\r', ' ')
+            processed_text = text.strip()
+            
+            logger.info(f"Preprocessed text: {len(processed_text)} characters")
+            return processed_text
+            
+        except Exception as e:
+            logger.error(f"Error preprocessing text: {str(e)}")
+            return text  # Return original text if preprocessing fails
 
 class AISummarizer:
-    """Handles AI-powered document summarization"""
+    """Handles document summarization using basic text analysis"""
     
     def __init__(self):
-        self.model_name = "t5-base"
-        self.tokenizer = None
-        self.model = None
-        self.summarizer = None
-        
-        if TRANSFORMERS_AVAILABLE:
-            self._load_model()
-    
-    def _load_model(self):
-        """Load the T5 model for summarization"""
-        try:
-            model_path = settings.AI_MODEL_PATH / self.model_name
-            if model_path.exists():
-                self.tokenizer = AutoTokenizer.from_pretrained(str(model_path))
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(str(model_path))
-            else:
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
-            
-            self.summarizer = pipeline("summarization", model=self.model, tokenizer=self.tokenizer)
-            logger.info("T5 model loaded successfully")
-        except Exception as e:
-            logger.error(f"Error loading T5 model: {str(e)}")
-            # Fallback to basic summarization
-            self.summarizer = None
+        # Simplified - no heavy model loading
+        pass
     
     def generate_summary(self, text: str, max_length: int = 400) -> Dict[str, str]:
         """Generate plain language summary of legal document"""
         try:
-            if self.summarizer and TRANSFORMERS_AVAILABLE:
-                # Use T5 model for summarization
-                summary = self.summarizer(text, max_length=max_length, min_length=200, do_sample=False)
-                plain_summary = summary[0]['summary_text']
-            else:
-                # Fallback to basic summarization
-                plain_summary = self._basic_summarization(text, max_length)
+            if not text or len(text.strip()) < 50:
+                return {
+                    'plain_language_summary': 'Document contains insufficient text for meaningful summary.',
+                    'legal_summary': 'Insufficient content for legal analysis.',
+                    'key_points': ['Document too short for analysis'],
+                    'word_count': 0
+                }
+            
+            # Use basic summarization
+            plain_summary = self._basic_summarization(text, max_length)
             
             # Generate legal summary (more technical)
             legal_summary = self._generate_legal_summary(text)
@@ -157,48 +172,87 @@ class AISummarizer:
             # Return basic summary on error
             return {
                 'plain_language_summary': self._basic_summarization(text, max_length),
-                'legal_summary': '',
-                'key_points': [],
+                'legal_summary': 'Summary generation failed due to technical error.',
+                'key_points': ['Error occurred during analysis'],
                 'word_count': 0
             }
     
     def _basic_summarization(self, text: str, max_length: int) -> str:
         """Basic summarization when AI model is not available"""
-        sentences = text.split('.')
-        summary_sentences = sentences[:5]  # Take first 5 sentences
-        summary = '. '.join(summary_sentences) + '.'
-        
-        if len(summary) > max_length:
-            summary = summary[:max_length] + '...'
-        
-        return summary
+        try:
+            sentences = text.split('.')
+            # Take first few meaningful sentences
+            summary_sentences = []
+            for sentence in sentences:
+                if len(sentence.strip()) > 20:  # Only meaningful sentences
+                    summary_sentences.append(sentence.strip())
+                    if len(summary_sentences) >= 3:  # Limit to 3 sentences
+                        break
+            
+            if not summary_sentences:
+                summary_sentences = sentences[:2]  # Fallback to first 2 sentences
+            
+            summary = '. '.join(summary_sentences) + '.'
+            
+            if len(summary) > max_length:
+                summary = summary[:max_length] + '...'
+            
+            return summary
+        except Exception as e:
+            logger.error(f"Error in basic summarization: {str(e)}")
+            return "Document summary could not be generated."
     
     def _generate_legal_summary(self, text: str) -> str:
         """Generate more technical legal summary"""
-        # This would be enhanced with legal domain knowledge
-        return "Legal analysis summary would be generated here."
+        try:
+            # Simple legal summary based on content analysis
+            legal_terms = ['contract', 'agreement', 'terms', 'conditions', 'obligations', 
+                          'liability', 'indemnification', 'termination', 'renewal']
+            
+            found_terms = [term for term in legal_terms if term.lower() in text.lower()]
+            
+            if found_terms:
+                return f"This document contains legal provisions related to: {', '.join(found_terms)}."
+            else:
+                return "This document contains general legal content requiring review."
+        except Exception as e:
+            logger.error(f"Error generating legal summary: {str(e)}")
+            return "Legal summary could not be generated."
     
     def _extract_key_points(self, text: str) -> List[str]:
         """Extract key points from the document"""
-        # Simple keyword-based extraction
-        legal_keywords = [
-            'contract', 'agreement', 'terms', 'conditions', 'obligations',
-            'liability', 'indemnification', 'termination', 'renewal',
-            'confidentiality', 'intellectual property', 'governing law'
-        ]
-        
-        key_points = []
-        sentences = text.split('.')
-        
-        for sentence in sentences[:10]:  # Check first 10 sentences
-            for keyword in legal_keywords:
-                if keyword.lower() in sentence.lower() and len(sentence.strip()) > 20:
-                    key_points.append(sentence.strip())
-                    break
+        try:
+            # Simple keyword-based extraction
+            legal_keywords = [
+                'contract', 'agreement', 'terms', 'conditions', 'obligations',
+                'liability', 'indemnification', 'termination', 'renewal',
+                'confidentiality', 'intellectual property', 'governing law'
+            ]
+            
+            key_points = []
+            sentences = text.split('.')
+            
+            for sentence in sentences[:10]:  # Check first 10 sentences
+                sentence = sentence.strip()
+                if len(sentence) < 20:  # Skip very short sentences
+                    continue
+                    
+                for keyword in legal_keywords:
+                    if keyword.lower() in sentence.lower():
+                        key_points.append(sentence)
+                        break
+                        
                 if len(key_points) >= 5:  # Limit to 5 key points
                     break
-        
-        return key_points[:5]
+            
+            if not key_points:
+                # Fallback: take first few meaningful sentences
+                key_points = [s.strip() for s in sentences[:3] if len(s.strip()) > 20]
+            
+            return key_points[:5]
+        except Exception as e:
+            logger.error(f"Error extracting key points: {str(e)}")
+            return ["Key points could not be extracted due to technical error."]
 
 class ClauseDetector:
     """Detects legal clauses and assesses risk levels"""
@@ -435,48 +489,20 @@ class RiskAnalyzer:
             return f"This document contains mostly low-risk clauses ({low_count} low, {medium_count} medium). Standard review procedures should be sufficient."
 
 class ChatService:
-    """Handles Q&A functionality using Google Gemini API"""
+    """Handles Q&A functionality using basic text analysis"""
     
     def __init__(self):
-        self.api_key = getattr(settings, 'GOOGLE_API_KEY', '')
-        if self.api_key and GEMINI_AVAILABLE:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
-        else:
-            self.model = None
-            if not GEMINI_AVAILABLE:
-                logger.warning("Google Generative AI library not available")
-            elif not self.api_key:
-                logger.warning("Google Gemini API key not configured")
+        # Simplified - no external API dependencies
+        pass
     
     def generate_answer(self, question: str, document_context: str, clauses: List[Dict] = None) -> Dict:
         """Generate answer to user question about the document"""
         try:
-            if not self.model:
-                return self._fallback_answer(question)
-            
-            # Prepare context for the AI model
-            context = self._prepare_context(document_context, clauses)
-            
-            # Create prompt
-            prompt = f"""
-            Context: {context}
-            
-            Question: {question}
-            
-            Please provide a clear, helpful answer about this legal document. 
-            If you reference specific clauses, please cite them. 
-            Always include a disclaimer that this is not legal advice.
-            
-            Answer:
-            """
-            
-            # Generate response
-            response = self.model.generate_content(prompt)
-            answer = response.text
+            # Use basic text analysis to generate answers
+            answer = self._generate_basic_answer(question, document_context, clauses)
             
             # Calculate confidence (simplified)
-            confidence_score = self._calculate_confidence(answer, question, context)
+            confidence_score = self._calculate_confidence(answer, question, document_context)
             
             # Extract sources
             sources = self._extract_sources(answer, clauses)
@@ -490,6 +516,34 @@ class ChatService:
         except Exception as e:
             logger.error(f"Error generating answer: {str(e)}")
             return self._fallback_answer(question)
+    
+    def _generate_basic_answer(self, question: str, document_context: str, clauses: List[Dict] = None) -> str:
+        """Generate basic answer using text analysis"""
+        question_lower = question.lower()
+        
+        # Simple keyword-based answering
+        if 'summary' in question_lower or 'overview' in question_lower:
+            return f"Based on the document content, this appears to be a legal document containing approximately {len(document_context.split())} words. The document covers various legal topics and should be reviewed carefully. This is not legal advice."
+        
+        elif 'risk' in question_lower or 'dangerous' in question_lower:
+            if clauses:
+                high_risk_count = sum(1 for clause in clauses if clause.get('risk_level') == 'high')
+                if high_risk_count > 0:
+                    return f"The document contains {high_risk_count} high-risk clauses that require careful attention. These clauses may have significant legal implications. This is not legal advice."
+                else:
+                    return "The document appears to have moderate to low risk levels based on the clauses analyzed. However, all legal documents should be reviewed by qualified professionals. This is not legal advice."
+            else:
+                return "Risk analysis is not available for this document. Please ensure you have the document properly processed. This is not legal advice."
+        
+        elif 'clause' in question_lower or 'section' in question_lower:
+            if clauses:
+                clause_types = list(set(clause.get('clause_type', 'unknown') for clause in clauses))
+                return f"The document contains {len(clauses)} clauses of various types including: {', '.join(clause_types[:5])}. Each clause should be reviewed for its legal implications. This is not legal advice."
+            else:
+                return "No specific clauses have been identified in this document yet. Please ensure the document has been fully processed. This is not legal advice."
+        
+        else:
+            return f"I can help you understand this legal document. The document contains {len(document_context.split())} words and covers various legal topics. For specific questions about clauses, risks, or summaries, please ask more specifically. This is not legal advice."
     
     def _prepare_context(self, document_context: str, clauses: List[Dict] = None) -> str:
         """Prepare context for the AI model"""
