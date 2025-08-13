@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Document - AI Legal Explainer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+        .is-invalid:focus {
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+        }
+        .form-text {
+            font-size: 0.875em;
+            color: #6c757d;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'main:welcome' %}">
+                <i class="fas fa-balance-scale me-2"></i>
+                AI Legal Explainer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:glossary' %}">Glossary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'main:upload_document' %}">Upload Document</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>
+                            Upload Legal Document
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data" action="{% url 'main:upload_document' %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Document Title</label>
+                                <input type="text" class="form-control" id="title" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="document_type" class="form-label">Document Type</label>
+                                <select class="form-select" id="document_type" name="document_type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="contract">Contract</option>
+                                    <option value="agreement">Agreement</option>
+                                    <option value="terms">Terms of Service</option>
+                                    <option value="policy">Privacy Policy</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Document File</label>
+                                <input type="file" class="form-control" id="file" name="file" accept=".pdf,.docx,.txt" required>
+                                <div class="form-text">Supported formats: PDF, DOCX, TXT (Max 10MB)</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>
+                                    Upload Document
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'main:home' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to Home
+                    </a>
+                </div>
+                
+                <!-- Debug Section -->
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Debug Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Form Action:</strong> <code>{% url 'main:upload_document' %}</code></p>
+                            <p><strong>CSRF Token:</strong> <code id="csrf-token">{{ csrf_token }}</code></p>
+                            <p><strong>File Input Name:</strong> <code>file</code></p>
+                            <p><strong>Expected Endpoint:</strong> <code>/upload/</code></p>
+                            <p><strong>Debug Endpoint:</strong> <a href="{% url 'main:debug_upload' %}" target="_blank">/debug-upload/</a></p>
+                            <div id="debug-info" class="mt-2">
+                                <p><strong>Selected File:</strong> <span id="selected-file">None</span></p>
+                                <p><strong>Form Data:</strong> <pre id="form-data">Fill form to see data</pre></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Simple Test Form -->
+                <div class="mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Simple Test Upload (No JavaScript)</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" enctype="multipart/form-data" action="{% url 'main:upload_document' %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="test_title" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="test_title" name="title" value="Test Document" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="test_type" class="form-label">Type</label>
+                                    <select class="form-select" id="test_type" name="document_type" required>
+                                        <option value="contract">Contract</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="test_file" class="form-label">File</label>
+                                    <input type="file" class="form-control" id="test_file" name="file" accept=".pdf,.docx,.txt" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning">Test Upload (No JS)</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const titleInput = document.getElementById('title');
+            const documentTypeSelect = document.getElementById('document_type');
+            const fileInput = document.getElementById('file');
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Form validation
+            function validateForm() {
+                let isValid = true;
+                
+                // Validate title
+                if (!titleInput.value.trim()) {
+                    titleInput.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    titleInput.classList.remove('is-invalid');
+                }
+                
+                // Validate document type
+                if (!documentTypeSelect.value) {
+                    documentTypeSelect.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    documentTypeSelect.classList.remove('is-invalid');
+                }
+                
+                // Validate file
+                if (!fileInput.files[0]) {
+                    fileInput.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    fileInput.classList.remove('is-invalid');
+                }
+                
+                return isValid;
+            }
+            
+            // Handle form submission
+            form.addEventListener('submit', function(e) {
+                console.log('Form submission started');
+                console.log('Form data:', {
+                    title: titleInput.value,
+                    document_type: documentTypeSelect.value,
+                    file: fileInput.files[0]
+                });
+                
+                if (!validateForm()) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields and select a file.');
+                    return;
+                }
+                
+                // Log form data before submission
+                const formData = new FormData(form);
+                console.log('FormData contents:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
+                
+                // Disable submit button to prevent double submission
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+                
+                // Form will submit normally if validation passes
+                console.log('Form validation passed, submitting...');
+            });
+            
+            // Real-time validation feedback
+            titleInput.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    this.classList.remove('is-invalid');
+                }
+            });
+            
+            documentTypeSelect.addEventListener('change', function() {
+                if (this.value) {
+                    this.classList.remove('is-invalid');
+                }
+            });
+            
+            fileInput.addEventListener('change', function() {
+                console.log('File selected:', this.files[0]);
+                if (this.files[0]) {
+                    this.classList.remove('is-invalid');
+                    console.log('File details:', {
+                        name: this.files[0].name,
+                        size: this.files[0].size,
+                        type: this.files[0].type
+                    });
+                    
+                    // Update debug info
+                    document.getElementById('selected-file').textContent = 
+                        `${this.files[0].name} (${(this.files[0].size / 1024).toFixed(2)} KB)`;
+                } else {
+                    document.getElementById('selected-file').textContent = 'None';
+                }
+            });
+            
+            // Update form data display
+            function updateFormData() {
+                const formData = new FormData(form);
+                const data = {};
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'file') {
+                        data[key] = value.name || 'No file selected';
+                    } else {
+                        data[key] = value;
+                    }
+                }
+                document.getElementById('form-data').textContent = JSON.stringify(data, null, 2);
+            }
+            
+            // Update form data on any input change
+            titleInput.addEventListener('input', updateFormData);
+            documentTypeSelect.addEventListener('change', updateFormData);
+            fileInput.addEventListener('change', updateFormData);
+            
+            // Initial form data update
+            updateFormData();
+        });
+    </script>
+</body>
+</html>

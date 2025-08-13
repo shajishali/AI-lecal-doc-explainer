@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Legal Explainer - Welcome</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+        }
+        .feature-card {
+            transition: transform 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .risk-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .risk-high { background-color: #dc3545; }
+        .risk-medium { background-color: #ffc107; }
+        .risk-low { background-color: #28a745; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'main:welcome' %}">
+                <i class="fas fa-balance-scale me-2"></i>
+                AI Legal Explainer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:glossary' %}">Glossary</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:upload_document' %}">Upload Document</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-4">
+                <i class="fas fa-robot me-3"></i>
+                AI Legal Explainer
+            </h1>
+            <p class="lead mb-4">
+                Transform complex legal documents into plain language with AI-powered analysis, 
+                risk detection, and interactive Q&A
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'main:home' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-play me-2"></i>
+                    Get Started
+                </a>
+                <a href="#features" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Key Features</h2>
+                <p class="lead text-muted">Everything you need to understand legal documents</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-file-alt fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title">Document Processing</h5>
+                            <p class="card-text">
+                                Upload PDF, DOCX, or TXT files and get instant text extraction 
+                                with OCR support for scanned documents.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-brain fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">AI Summarization</h5>
+                            <p class="card-text">
+                                Get plain-language summaries of legal documents using advanced 
+                                AI models trained on legal text.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                            </div>
+                            <h5 class="card-title">Risk Detection</h5>
+                            <p class="card-text">
+                                Automatically identify high-risk clauses like penalties, 
+                                auto-renewals, and indemnification terms.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-comments fa-3x text-info"></i>
+                            </div>
+                            <h5 class="card-title">Interactive Q&A</h5>
+                            <p class="card-text">
+                                Ask questions about your documents and get AI-powered answers 
+                                with source citations and confidence scores.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-book fa-3x text-secondary"></i>
+                            </div>
+                            <h5 class="card-title">Legal Glossary</h5>
+                            <p class="card-text">
+                                Access comprehensive definitions of legal terms with 
+                                plain-language explanations and examples.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-mobile-alt fa-3x text-dark"></i>
+                            </div>
+                            <h5 class="card-title">Responsive Design</h5>
+                            <p class="card-text">
+                                Use the application on any device with our mobile-first 
+                                responsive design built with Bootstrap 5.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Risk Levels Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Risk Assessment</h2>
+                <p class="lead text-muted">Understand the risk levels in your legal documents</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 bg-danger bg-opacity-10">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <span class="risk-indicator risk-high"></span>
+                                <h4 class="text-danger">High Risk</h4>
+                            </div>
+                            <p class="card-text">
+                                Clauses with significant legal or financial implications. 
+                                Professional legal review strongly recommended.
+                            </p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-danger me-2"></i>Penalty clauses</li>
+                                <li><i class="fas fa-check text-danger me-2"></i>Indemnification terms</li>
+                                <li><i class="fas fa-check text-danger me-2"></i>Liability limitations</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 bg-warning bg-opacity-10">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <span class="risk-indicator risk-medium"></span>
+                                <h4 class="text-warning">Medium Risk</h4>
+                            </div>
+                            <p class="card-text">
+                                Clauses with moderate legal implications. 
+                                Legal review recommended for better understanding.
+                            </p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-warning me-2"></i>Auto-renewal terms</li>
+                                <li><i class="fas fa-check text-warning me-2"></i>Termination clauses</li>
+                                <li><i class="fas fa-check text-warning me-2"></i>Governing law</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card border-0 bg-success bg-opacity-10">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <span class="risk-indicator risk-low"></span>
+                                <h4 class="text-success">Low Risk</h4>
+                            </div>
+                            <p class="card-text">
+                                Standard clauses with minimal legal implications. 
+                                Standard review procedures should be sufficient.
+                            </p>
+                            <ul class="list-unstyled text-start">
+                                <li><i class="fas fa-check text-success me-2"></i>Definitions</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Scope and purpose</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Recitals</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">Ready to Get Started?</h2>
+            <p class="lead mb-4">
+                Upload your first legal document and experience the power of AI-powered legal analysis
+            </p>
+            <a href="{% url 'main:home' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-upload me-2"></i>
+                Upload Document
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="fas fa-balance-scale me-2"></i>
+                AI Legal Explainer - Making Legal Documents Accessible to Everyone
+            </p>
+            <small class="text-muted">
+                This tool is for educational purposes only and does not constitute legal advice.
+            </small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
