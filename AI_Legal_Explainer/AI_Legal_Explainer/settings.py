@@ -91,28 +91,43 @@ WSGI_APPLICATION = "AI_Legal_Explainer.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv('DB_NAME', 'ai_legal_explainer'),
-        "USER": os.getenv('DB_USER', 'root'),
-        "PASSWORD": os.getenv('DB_PASSWORD', ''),
-        "HOST": os.getenv('DB_HOST', 'localhost'),
-        "PORT": os.getenv('DB_PORT', '3306'),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-        },
-    }
-}
-
-# Fallback to SQLite for development if MySQL is not available
-if DEBUG and not os.getenv('DB_HOST'):
+# Check if we're on Render (production)
+if os.getenv('RENDER'):
+    # Production database (PostgreSQL on Render)
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DATABASE_NAME', 'ai_legal_explainer'),
+            'USER': os.getenv('DATABASE_USER', 'ai_legal_explainer_user'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
+            'HOST': os.getenv('DATABASE_HOST', ''),
+            'PORT': os.getenv('DATABASE_PORT', '5432'),
         }
     }
+else:
+    # Development database
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv('DB_NAME', 'ai_legal_explainer'),
+            "USER": os.getenv('DB_USER', 'root'),
+            "PASSWORD": os.getenv('DB_PASSWORD', ''),
+            "HOST": os.getenv('DB_HOST', 'localhost'),
+            "PORT": os.getenv('DB_PORT', '3306'),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+            },
+        }
+    }
+
+    # Fallback to SQLite for development if MySQL is not available
+    if DEBUG and not os.getenv('DB_HOST'):
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -169,6 +184,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# Production static file handling
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = "/media/"
