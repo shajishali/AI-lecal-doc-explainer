@@ -10,6 +10,13 @@ python-dotenv==1.0.0
 mysqlclient==2.2.7
 # OR for SQLite (no additional package needed)
 
+# Multilingual Support
+langdetect==1.0.9
+googletrans==4.0.0rc1
+transformers[torch]==4.36.0
+sentencepiece==0.1.99
+protobuf==4.25.1
+
 # Optional: For better PDF processing
 # pdfplumber==0.10.3
 

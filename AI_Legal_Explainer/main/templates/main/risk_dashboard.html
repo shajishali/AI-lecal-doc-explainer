@@ -1,0 +1,280 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Risk Dashboard - {{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Risk Dashboard</h1>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Document Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ document.title }}</h6>
+                    <p class="text-muted">Document Type: {{ document.get_document_type_display }}</p>
+                    <p class="text-muted">Uploaded: {{ document.uploaded_at|date:"F j, Y" }}</p>
+                    {% if document.is_processed %}
+                        <span class="badge bg-success">Processed</span>
+                    {% else %}
+                        <span class="badge bg-warning">Processing Required</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if has_error %}
+        <div class="alert alert-danger">
+            <strong>Error:</strong> {{ dashboard_data.error }}
+        </div>
+    {% else %}
+        <!-- Risk Distribution Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Risk Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ dashboard_data.risk_distribution|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Timeline Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Clause Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ dashboard_data.risk_timeline|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clause Type Analysis -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Clause Analysis by Type</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ dashboard_data.clause_analysis|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall Risk Gauge -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Overall Risk Assessment</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ dashboard_data.risk_gauge|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'main:document_detail' document.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Document
+                </a>
+                <a href="{% url 'main:home' %}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Risk Chart Styles */
+.risk-chart .chart-container {
+    padding: 20px;
+}
+
+.risk-chart .chart-item {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.risk-chart .risk-label {
+    min-width: 120px;
+    margin-right: 15px;
+    font-weight: 500;
+}
+
+.risk-chart .risk-bar {
+    height: 25px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    min-width: 30px;
+}
+
+/* Timeline Chart Styles */
+.timeline-chart .timeline-container {
+    padding: 20px;
+}
+
+.timeline-chart .timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+    border-left: 3px solid #ddd;
+}
+
+.timeline-chart .timeline-marker {
+    position: absolute;
+    left: -8px;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.timeline-chart .timeline-content {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.timeline-chart .risk-level {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+.timeline-chart .clause-preview {
+    margin-top: 5px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Clause Analysis Chart Styles */
+.clause-analysis-chart .chart-container {
+    padding: 20px;
+}
+
+.clause-analysis-chart .clause-type-group {
+    margin-bottom: 20px;
+}
+
+.clause-analysis-chart .clause-type-label {
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.clause-analysis-chart .risk-bars {
+    display: flex;
+    gap: 5px;
+}
+
+.clause-analysis-chart .risk-bar {
+    height: 30px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    min-width: 30px;
+}
+
+.clause-analysis-chart .legend {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.clause-analysis-chart .legend-item {
+    display: inline-block;
+    margin: 0 15px;
+}
+
+.clause-analysis-chart .legend-color {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.clause-analysis-chart .legend-color.high {
+    background-color: #ff4444;
+}
+
+.clause-analysis-chart .legend-color.medium {
+    background-color: #ffaa00;
+}
+
+.clause-analysis-chart .legend-color.low {
+    background-color: #44ff44;
+}
+
+/* Risk Gauge Styles */
+.risk-gauge .gauge-container {
+    text-align: center;
+    padding: 20px;
+}
+
+.risk-gauge .gauge-circle {
+    width: 200px;
+    height: 200px;
+    border: 15px solid;
+    border-radius: 50%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.risk-gauge .gauge-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.risk-gauge .gauge-label {
+    font-size: 1.2em;
+    color: #666;
+}
+
+.risk-gauge .gauge-details {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.risk-gauge .detail-item {
+    display: inline-block;
+    margin: 0 15px;
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

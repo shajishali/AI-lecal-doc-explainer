@@ -138,7 +138,12 @@ class AISummarizer:
     
     def __init__(self):
         # Simplified - no heavy model loading
-        pass
+        self.multilingual_service = None
+        try:
+            from .multilingual_service import MultilingualService
+            self.multilingual_service = MultilingualService()
+        except ImportError:
+            logger.warning("Multilingual service not available")
     
     def generate_summary(self, text: str, max_length: int = 400) -> Dict[str, str]:
         """Generate plain language summary of legal document"""
@@ -160,11 +165,19 @@ class AISummarizer:
             # Extract key points
             key_points = self._extract_key_points(text)
             
+            # Generate multilingual summaries if service is available
+            multilingual_summaries = {}
+            if self.multilingual_service:
+                multilingual_summaries = self.multilingual_service.create_multilingual_summary(
+                    plain_summary, ['ta', 'si']
+                )
+            
             return {
                 'plain_language_summary': plain_summary,
                 'legal_summary': legal_summary,
                 'key_points': key_points,
-                'word_count': len(plain_summary.split())
+                'word_count': len(plain_summary.split()),
+                'multilingual_summaries': multilingual_summaries
             }
             
         except Exception as e:
@@ -605,6 +618,12 @@ class GlossaryService:
     
     def __init__(self):
         self.terms = self._load_default_terms()
+        self.multilingual_service = None
+        try:
+            from .multilingual_service import MultilingualService
+            self.multilingual_service = MultilingualService()
+        except ImportError:
+            logger.warning("Multilingual service not available")
     
     def _load_default_terms(self) -> List[Dict]:
         """Load default legal terms"""
@@ -673,3 +692,83 @@ class GlossaryService:
             )
         
         return highlighted_text
+    
+    def get_multilingual_glossary(self, language: str = 'en') -> List[Dict]:
+        """Get glossary terms in specified language"""
+        if not self.multilingual_service or language == 'en':
+            return self.terms
+        
+        multilingual_terms = []
+        for term in self.terms:
+            multilingual_term = term.copy()
+            multilingual_term['definition'] = self.multilingual_service.translate_text(
+                term['definition'], language, 'en'
+            )
+            multilingual_term['plain_language_explanation'] = self.multilingual_service.translate_text(
+                term['plain_language_explanation'], language, 'en'
+            )
+            multilingual_terms.append(multilingual_term)
+        
+        return multilingual_terms
+    
+    def search_terms_multilingual(self, query: str, language: str = 'en') -> List[Dict]:
+        """Search for legal terms in specified language"""
+        if language == 'en':
+            return self.search_terms(query)
+        
+        # Translate query to English for search
+        if self.multilingual_service:
+            english_query = self.multilingual_service.translate_text(query, 'en', language)
+        else:
+            english_query = query
+        
+        # Search in English
+        english_results = self.search_terms(english_query)
+        
+        # Translate results back to target language
+        if self.multilingual_service:
+            multilingual_results = []
+            for result in english_results:
+                multilingual_result = result.copy()
+                multilingual_result['definition'] = self.multilingual_service.translate_text(
+                    result['definition'], language, 'en'
+                )
+                multilingual_result['plain_language_explanation'] = self.multilingual_service.translate_text(
+                    result['plain_language_explanation'], language, 'en'
+                )
+                multilingual_results.append(multilingual_result)
+            return multilingual_results
+        
+        return english_results
+    
+    def generate_summary_in_language(self, text: str, language: str, max_length: int = 400) -> Dict[str, str]:
+        """Generate summary in specific language"""
+        if language == 'en':
+            return self.generate_summary(text, max_length)
+        
+        if not self.multilingual_service:
+            logger.warning("Multilingual service not available, falling back to English")
+            return self.generate_summary(text, max_length)
+        
+        # Generate summary in English first
+        english_summary = self.generate_summary(text, max_length)
+        
+        # Translate to target language
+        multilingual_summary = {}
+        for key, value in english_summary.items():
+            if key == 'multilingual_summaries':
+                continue
+            if isinstance(value, str):
+                multilingual_summary[key] = self.multilingual_service.translate_text(
+                    value, language, 'en'
+                )
+            elif isinstance(value, list):
+                multilingual_summary[key] = [
+                    self.multilingual_service.translate_text(item, language, 'en') 
+                    if isinstance(item, str) else item
+                    for item in value
+                ]
+            else:
+                multilingual_summary[key] = value
+        
+        return multilingual_summary

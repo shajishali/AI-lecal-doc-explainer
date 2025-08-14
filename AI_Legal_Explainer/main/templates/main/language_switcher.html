@@ -1,0 +1,95 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Language Selection{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h2>🌍 Choose Your Language</h2>
+        <p>Select your preferred language for legal document explanations</p>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-4 mb-4">
+            <div class="card language-card" data-language="en" onclick="selectLanguage('en')">
+                <div class="card-body text-center">
+                    <div class="h1">🇺🇸</div>
+                    <h4>English</h4>
+                    <p>Legal explanations in clear English</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card language-card" data-language="ta" onclick="selectLanguage('ta')">
+                <div class="card-body text-center">
+                    <div class="h1">🇮🇳</div>
+                    <h4>Tamil</h4>
+                    <p>தமிழில் சட்ட விளக்கங்கள்</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card language-card" data-language="si" onclick="selectLanguage('si')">
+                <div class="card-body text-center">
+                    <div class="h1">🇱🇰</div>
+                    <h4>Sinhala</h4>
+                    <p>සිංහලෙන් නීති පැහැදිලි කිරීම්</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <button id="continueBtn" class="btn btn-primary btn-lg" disabled onclick="continueWithLanguage()">
+            Continue
+        </button>
+    </div>
+</div>
+
+<script>
+let selectedLanguage = null;
+
+function selectLanguage(language) {
+    document.querySelectorAll('.language-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    const selectedCard = document.querySelector(`[data-language="${language}"]`);
+    selectedCard.classList.add('selected');
+    selectedLanguage = language;
+    document.getElementById('continueBtn').disabled = false;
+}
+
+function continueWithLanguage() {
+    if (!selectedLanguage) return;
+    
+    fetch('/api/multilingual/set_language_preference/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({language: selectedLanguage})
+    })
+    .then(() => window.location.href = '/home/')
+    .catch(() => window.location.href = '/home/');
+}
+</script>
+
+<style>
+.language-card {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.language-card:hover {
+    transform: translateY(-5px);
+}
+.language-card.selected {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+</style>
+{% endblock %}

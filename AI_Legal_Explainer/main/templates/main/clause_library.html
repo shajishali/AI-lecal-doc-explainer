@@ -1,0 +1,184 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Clause Library - AI Legal Explainer{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Clause Library</h1>
+            
+            <!-- Clause Templates -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-contract me-2"></i>
+                        Standard Clause Templates
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for template_id, template in templates.items %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ template.name }}</h6>
+                                    <p class="card-text">{{ template.text|truncatewords:20 }}</p>
+                                    <div class="mb-2">
+                                        <span class="badge {% if template.risk_level == 'high' %}bg-danger{% elif template.risk_level == 'medium' %}bg-warning{% else %}bg-success{% endif %} me-2">
+                                            {{ template.risk_level|title }} Risk
+                                        </span>
+                                        {% if template.best_practice %}
+                                        <span class="badge bg-success">Best Practice</span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        <strong>Jurisdiction:</strong> {{ template.jurisdiction|title }} | 
+                                        <strong>Industry:</strong> {{ template.industry|title }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Best Practices -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>
+                        Best Practices by Clause Type
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for clause_type, practices in best_practices.items %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">{{ clause_type|title }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        {% for practice in practices %}
+                                        <li class="list-group-item">
+                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                            {{ practice }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Clauses -->
+            {% if documents %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-folder-open me-2"></i>
+                        Clauses from Your Documents
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for document in documents %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">{{ document.title }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-2">
+                                        <small>{{ document.get_document_type_display }} • {{ document.clauses.count }} clauses</small>
+                                    </p>
+                                    <div class="mb-2">
+                                        <a href="{% url 'main:document_detail' document.id %}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i>
+                                            View Document
+                                        </a>
+                                        <a href="{% url 'main:risk_dashboard' document.id %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-chart-pie me-1"></i>
+                                            Risk Dashboard
+                                        </a>
+                                    </div>
+                                    <div class="clause-summary">
+                                        {% for clause in document.clauses.all|slice:":3" %}
+                                        <div class="mb-1">
+                                            <span class="badge {% if clause.risk_level == 'high' %}bg-danger{% elif clause.risk_level == 'medium' %}bg-warning{% else %}bg-success{% endif %} me-1">
+                                                {{ clause.risk_level|title }}
+                                            </span>
+                                            <small>{{ clause.get_clause_type_display }}</small>
+                                        </div>
+                                        {% endfor %}
+                                        {% if document.clauses.count > 3 %}
+                                        <small class="text-muted">... and {{ document.clauses.count|add:"-3" }} more</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Navigation -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'main:home' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </a>
+                        <a href="{% url 'main:upload_document' %}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Document
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.list-group-item {
+    border-left: 4px solid #28a745;
+    padding-left: 1rem;
+}
+
+.clause-summary {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+</style>
+{% endblock %}

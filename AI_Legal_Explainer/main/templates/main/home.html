@@ -85,6 +85,48 @@
         .status-processing { background-color: #007bff; }
         .status-completed { background-color: #28a745; }
         .status-failed { background-color: #dc3545; }
+        
+        /* Footer Styles */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        main {
+            flex: 1;
+        }
+        
+        footer {
+            margin-top: auto;
+            background-color: #f8f9fa !important;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer-content {
+            padding: 1.5rem 0;
+            color: #6c757d;
+        }
+        
+        .footer-links {
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links a {
+            color: #6c757d;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #495057;
+        }
+        
+        .footer-copyright {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -109,21 +151,54 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'main:upload_document' %}">Upload Document</a>
                     </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-rocket me-1"></i>Advanced Features
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'main:clause_library' %}">
+                                <i class="fas fa-book me-2"></i>Clause Library
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'main:language_switcher' %}">
+                                <i class="fas fa-globe me-2"></i>Multilingual
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="showRiskDashboard()">
+                                <i class="fas fa-chart-line me-2"></i>Risk Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showWhatIfSimulation()">
+                                <i class="fas fa-question-circle me-2"></i>What-If Simulation
+                            </a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <!-- Django Messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <main>
+        <div class="container mt-4">
+            <!-- Django Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Phase 2 Status Banner -->
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <div>
+                        <strong>Phase 2 Features Available!</strong> 
+                        Access advanced AI capabilities: Risk Dashboard, What-If Simulations, Clause Library, and Multilingual support (English, Tamil, Sinhala).
+                    </div>
                 </div>
-            {% endfor %}
-        {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         
         <!-- Upload Section -->
         <div class="row mb-4">
@@ -179,6 +254,64 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 2 Features Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-rocket me-2"></i>
+                            Advanced AI Features
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <div class="text-center">
+                                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                                    <h6>Risk Dashboard</h6>
+                                    <p class="text-muted small">Interactive risk visualizations and charts</p>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showRiskDashboard()">
+                                        View Dashboard
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="text-center">
+                                    <i class="fas fa-question-circle fa-3x text-warning mb-3"></i>
+                                    <h6>What-If Simulation</h6>
+                                    <p class="text-muted small">Test clause modifications and scenarios</p>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="showWhatIfSimulation()">
+                                        Start Simulation
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="text-center">
+                                    <i class="fas fa-book fa-3x text-success mb-3"></i>
+                                    <h6>Clause Library</h6>
+                                    <p class="text-muted small">Compare and manage legal clauses</p>
+                                    <button class="btn btn-outline-success btn-sm" onclick="showClauseLibrary()">
+                                        Browse Library
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="text-center">
+                                    <i class="fas fa-globe fa-3x text-primary mb-3"></i>
+                                    <h6>Multilingual</h6>
+                                    <p class="text-muted small">English, Tamil & Sinhala support</p>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="showMultilingual()">
+                                        Language Options
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -280,6 +413,43 @@
                     <div id="documentModalContent">
                         <!-- Content will be loaded here -->
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the document <strong id="deleteDocumentTitle"></strong>?</p>
+                    <p class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        This action will permanently delete:
+                    </p>
+                    <ul class="text-muted small">
+                        <li>The document file</li>
+                        <li>All extracted text and analysis</li>
+                        <li>Detected clauses and risk assessment</li>
+                        <li>Processing logs and summaries</li>
+                    </ul>
+                    <p class="text-danger fw-bold">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteDocument()">
+                        <i class="fas fa-trash me-1"></i>Delete Document
+                    </button>
                 </div>
             </div>
         </div>
@@ -464,8 +634,11 @@
                                 <button class="btn btn-outline-primary btn-sm me-2" onclick="viewDocument('${doc.id}')">
                                     <i class="fas fa-eye me-1"></i>View
                                 </button>
-                                <button class="btn btn-outline-success btn-sm" onclick="chatAboutDocument('${doc.id}')">
+                                <button class="btn btn-outline-success btn-sm me-2" onclick="chatAboutDocument('${doc.id}')">
                                     <i class="fas fa-comments me-1"></i>Chat
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteDocument('${doc.id}', '${doc.title}')">
+                                    <i class="fas fa-trash me-1"></i>Delete
                                 </button>
                             </div>
                         </div>
@@ -667,14 +840,203 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
+        // Delete document functions
+        let documentToDelete = null;
+
+        function confirmDeleteDocument(documentId, documentTitle) {
+            documentToDelete = documentId;
+            document.getElementById('deleteDocumentTitle').textContent = documentTitle;
+            
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        }
+
+        async function deleteDocument() {
+            if (!documentToDelete) {
+                console.error('No document selected for deletion');
+                return;
+            }
+
+            try {
+                // Show loading state
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                const originalText = confirmBtn.innerHTML;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+                confirmBtn.disabled = true;
+
+                // Make DELETE request
+                const response = await fetch(`/api/documents/${documentToDelete}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    // Close modal
+                    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    deleteModal.hide();
+                    
+                    // Show success message
+                    showAlert('Document deleted successfully!', 'success');
+                    
+                    // Refresh documents list
+                    loadDocuments();
+                    
+                    // Reset variables
+                    documentToDelete = null;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete document');
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+                showAlert(`Error deleting document: ${error.message}`, 'danger');
+            } finally {
+                // Reset button state
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            // Create alert element
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insert at the top of the main container
+            const container = document.querySelector('.container');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
         // Refresh documents
         function refreshDocuments() {
             loadDocuments();
         }
 
+        // Phase 2 Feature Functions
+        function showRiskDashboard() {
+            // Check if user has documents
+            const documents = document.querySelectorAll('[data-document-id]');
+            if (documents.length === 0) {
+                alert('Please upload a document first to view the risk dashboard');
+                return;
+            }
+            
+            // If only one document, go directly to its dashboard
+            if (documents.length === 1) {
+                const documentId = documents[0].getAttribute('data-document-id');
+                window.location.href = `/document/${documentId}/risk-dashboard/`;
+            } else {
+                // Show document selection modal
+                const documentId = prompt('Enter document ID to view risk dashboard:');
+                if (documentId) {
+                    window.location.href = `/document/${documentId}/risk-dashboard/`;
+                }
+            }
+        }
 
+        function showWhatIfSimulation() {
+            // Check if user has clauses
+            const clauses = document.querySelectorAll('[data-clause-id]');
+            if (clauses.length === 0) {
+                alert('Please upload a document with clauses first to use what-if simulation');
+                return;
+            }
+            
+            // If only one clause, go directly to simulation
+            if (clauses.length === 1) {
+                const clauseId = clauses[0].getAttribute('data-clause-id');
+                window.location.href = `/clause/${clauseId}/simulation/`;
+            } else {
+                // Show clause selection modal
+                const clauseId = prompt('Enter clause ID to start simulation:');
+                if (clauseId) {
+                    window.location.href = `/clause/${clauseId}/simulation/`;
+                }
+            }
+        }
 
+        function showClauseLibrary() {
+            window.location.href = "{% url 'main:clause_library' %}";
+        }
 
+        function showMultilingual() {
+            window.location.href = "{% url 'main:language_switcher' %}";
+        }
     </script>
+    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <!-- Footer Links -->
+                <div class="footer-links text-center">
+                    <a href="{% url 'main:home' %}">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    <a href="{% url 'main:upload_document' %}">
+                        <i class="fas fa-upload me-1"></i>Upload
+                    </a>
+                    <a href="{% url 'main:glossary' %}">
+                        <i class="fas fa-book me-1"></i>Glossary
+                    </a>
+                    <a href="{% url 'main:clause_library' %}">
+                        <i class="fas fa-book me-1"></i>Clause Library
+                    </a>
+                    <a href="{% url 'main:language_switcher' %}">
+                        <i class="fas fa-globe me-1"></i>Languages
+                    </a>
+                </div>
+                
+                <!-- Footer Divider -->
+                <hr class="my-3" style="border-color: #dee2e6;">
+                
+                <!-- Footer Info -->
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-balance-scale me-2"></i>AI Legal Explainer
+                        </h6>
+                        <p class="small text-muted mb-0">Advanced AI-powered legal document analysis</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-language me-2"></i>Multilingual Support
+                        </h6>
+                        <p class="small text-muted mb-0">English • Tamil • Sinhala</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-shield-alt me-2"></i>Features
+                        </h6>
+                        <p class="small text-muted mb-0">Risk Analysis • What-If Simulation • Clause Library</p>
+                    </div>
+                </div>
+                
+                <!-- Copyright -->
+                <div class="text-center mt-3">
+                    <p class="footer-copyright mb-0">
+                        &copy; 2024 AI Legal Explainer. All rights reserved. | 
+                        <span class="text-muted">Phase 2 Features Available</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

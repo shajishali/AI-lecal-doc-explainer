@@ -23,6 +23,48 @@
         .btn:disabled {
             cursor: not-allowed;
         }
+        
+        /* Footer Styles */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        main {
+            flex: 1;
+        }
+        
+        footer {
+            margin-top: auto;
+            background-color: #f8f9fa !important;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer-content {
+            padding: 1.5rem 0;
+            color: #6c757d;
+        }
+        
+        .footer-links {
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links a {
+            color: #6c757d;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #495057;
+        }
+        
+        .footer-copyright {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -52,7 +94,8 @@
         </div>
     </nav>
 
-    <div class="container mt-5">
+    <main>
+        <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
@@ -296,5 +339,66 @@
             updateFormData();
         });
     </script>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <!-- Footer Links -->
+                <div class="footer-links text-center">
+                    <a href="{% url 'main:home' %}">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    <a href="{% url 'main:upload_document' %}">
+                        <i class="fas fa-upload me-1"></i>Upload
+                    </a>
+                    <a href="{% url 'main:glossary' %}">
+                        <i class="fas fa-book me-1"></i>Glossary
+                    </a>
+                    <a href="{% url 'main:clause_library' %}">
+                        <i class="fas fa-book me-1"></i>Clause Library
+                    </a>
+                    <a href="{% url 'main:language_switcher' %}">
+                        <i class="fas fa-globe me-1"></i>Languages
+                    </a>
+                </div>
+                
+                <!-- Footer Divider -->
+                <hr class="my-3" style="border-color: #dee2e6;">
+                
+                <!-- Footer Info -->
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-balance-scale me-2"></i>AI Legal Explainer
+                        </h6>
+                        <p class="small text-muted mb-0">Advanced AI-powered legal document analysis</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-language me-2"></i>Multilingual Support
+                        </h6>
+                        <p class="small text-muted mb-0">English • Tamil • Sinhala</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-shield-alt me-2"></i>Features
+                        </h6>
+                        <p class="small text-muted mb-0">Risk Analysis • What-If Simulation • Clause Library</p>
+                    </div>
+                </div>
+                
+                <!-- Copyright -->
+                <div class="text-center mt-3">
+                    <p class="footer-copyright mb-0">
+                        &copy; 2024 AI Legal Explainer. All rights reserved. | 
+                        <span class="text-muted">Phase 2 Features Available</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

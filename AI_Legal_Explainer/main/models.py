@@ -108,10 +108,19 @@ class DocumentSummary(models.Model):
     legal_summary = models.TextField(blank=True)
     key_points = models.JSONField(default=list)
     word_count = models.IntegerField(default=0)
+    
+    # Multilingual support
+    language = models.CharField(max_length=10, default='en', choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    multilingual_summaries = models.JSONField(default=dict)  # Store summaries in all languages
+    
     generated_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"Summary for {self.document.title}"
+        return f"Summary for {self.document.title} ({self.language})"
 
 class ChatSession(models.Model):
     """Model for Q&A chat sessions"""
@@ -153,6 +162,16 @@ class LegalTerm(models.Model):
     plain_language_explanation = models.TextField()
     examples = models.TextField(blank=True)
     category = models.CharField(max_length=100, blank=True)
+    
+    # Multilingual support
+    language = models.CharField(max_length=10, default='en', choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    multilingual_definitions = models.JSONField(default=dict)  # Store definitions in all languages
+    multilingual_explanations = models.JSONField(default=dict)  # Store explanations in all languages
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -160,7 +179,7 @@ class LegalTerm(models.Model):
         ordering = ['term']
     
     def __str__(self):
-        return self.term
+        return f"{self.term} ({self.language})"
 
 class DocumentProcessingLog(models.Model):
     """Model for tracking document processing steps"""
@@ -194,3 +213,28 @@ class DocumentProcessingLog(models.Model):
     
     def __str__(self):
         return f"{self.step} - {self.status} for {self.document.title}"
+
+
+class UserLanguagePreference(models.Model):
+    """Model for storing user language preferences"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='language_preferences')
+    preferred_language = models.CharField(max_length=10, default='en', choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    fallback_language = models.CharField(max_length=10, default='en', choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    auto_translate = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'preferred_language']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.preferred_language}"

@@ -12,6 +12,48 @@
         .risk-low { color: #28a745; }
         .clause-card { margin-bottom: 1rem; }
         .processing-status { font-size: 0.9rem; }
+        
+        /* Footer Styles */
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        main {
+            flex: 1;
+        }
+        
+        footer {
+            margin-top: auto;
+            background-color: #f8f9fa !important;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .footer-content {
+            padding: 1.5rem 0;
+            color: #6c757d;
+        }
+        
+        .footer-links {
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links a {
+            color: #6c757d;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #495057;
+        }
+        
+        .footer-copyright {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -41,16 +83,20 @@
         </div>
     </nav>
 
-    <div class="container mt-5">
+    <main>
+        <div class="container mt-5">
         <!-- Document Header -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="mb-0">
                             <i class="fas fa-file-alt me-2"></i>
                             {{ document.title }}
                         </h3>
+                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDeleteDocument('{{ document.id }}', '{{ document.title }}')">
+                            <i class="fas fa-trash me-1"></i>Delete
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -76,6 +122,7 @@
                                 {% endif %}
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -268,19 +315,213 @@
         <!-- Actions -->
         <div class="row mt-4 mb-5">
             <div class="col-12 text-center">
-                <a href="{% url 'main:upload_document' %}" class="btn btn-primary me-2">
-                    <i class="fas fa-upload me-2"></i>
-                    Upload Another Document
-                </a>
-                <a href="{% url 'main:home' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-home me-2"></i>
-                    Back to Home
-                </a>
+                <!-- Enhanced Functionality Links -->
+                {% if document.clauses.all %}
+                <div class="mb-3">
+                    <h6 class="text-muted mb-3">Enhanced Analysis Tools</h6>
+                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                        <a href="{% url 'main:risk_dashboard' document.id %}" class="btn btn-info">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Risk Dashboard
+                        </a>
+                        <a href="{% url 'main:clause_library' %}" class="btn btn-warning">
+                            <i class="fas fa-book me-2"></i>
+                            Clause Library
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- What-If Simulation Links for High-Risk Clauses -->
+                {% if document.clauses.all %}
+                <div class="mb-3">
+                    <h6 class="text-muted mb-3">What-If Simulations</h6>
+                    <div class="d-flex justify-content-center flex-wrap gap-2">
+                        {% for clause in document.clauses.all %}
+                            {% if clause.risk_level == 'high' %}
+                            <a href="{% url 'main:what_if_simulation' clause.id %}" class="btn btn-danger btn-sm">
+                                <i class="fas fa-play me-1"></i>
+                                Simulate {{ clause.get_clause_type_display }}
+                            </a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if not document.clauses.all|dictsort:"risk_level"|first|slice:":1" == "high" %}
+                            <span class="text-muted">No high-risk clauses for simulation</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Standard Actions -->
+                <div class="mb-3">
+                    <a href="{% url 'main:upload_document' %}" class="btn btn-primary me-2">
+                        <i class="fas fa-upload me-2"></i>
+                        Upload Another Document
+                    </a>
+                    <a href="{% url 'main:home' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="footer-content">
+                <!-- Footer Links -->
+                <div class="footer-links text-center">
+                    <a href="{% url 'main:home' %}">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    <a href="{% url 'main:upload_document' %}">
+                        <i class="fas fa-upload me-1"></i>Upload
+                    </a>
+                    <a href="{% url 'main:glossary' %}">
+                        <i class="fas fa-book me-1"></i>Glossary
+                    </a>
+                    <a href="{% url 'main:clause_library' %}">
+                        <i class="fas fa-book me-1"></i>Clause Library
+                    </a>
+                    <a href="{% url 'main:language_switcher' %}">
+                        <i class="fas fa-globe me-1"></i>Languages
+                    </a>
+                </div>
+                
+                <!-- Footer Divider -->
+                <hr class="my-3" style="border-color: #dee2e6;">
+                
+                <!-- Footer Info -->
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-balance-scale me-2"></i>AI Legal Explainer
+                        </h6>
+                        <p class="small text-muted mb-0">Advanced AI-powered legal document analysis</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-language me-2"></i>Multilingual Support
+                        </h6>
+                        <p class="small text-muted mb-0">English • Tamil • Sinhala</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-dark mb-2">
+                            <i class="fas fa-shield-alt me-2"></i>Features
+                        </h6>
+                        <p class="small text-muted mb-0">Risk Analysis • What-If Simulation • Clause Library</p>
+                    </div>
+                </div>
+                
+                <!-- Copyright -->
+                <div class="text-center mt-3">
+                    <p class="footer-copyright mb-0">
+                        &copy; 2024 AI Legal Explainer. All rights reserved. | 
+                        <span class="text-muted">Phase 2 Features Available</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the document <strong id="deleteDocumentTitle"></strong>?</p>
+                    <p class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        This action will permanently delete:
+                    </p>
+                    <ul class="text-muted small">
+                        <li>The document file</li>
+                        <li>All extracted text and analysis</li>
+                        <li>Detected clauses and risk assessment</li>
+                        <li>Processing logs and summaries</li>
+                    </ul>
+                    <p class="text-danger fw-bold">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteDocument()">
+                        <i class="fas fa-trash me-1"></i>Delete Document
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Delete document functions
+        let documentToDelete = null;
+
+        function confirmDeleteDocument(documentId, documentTitle) {
+            documentToDelete = documentId;
+            document.getElementById('deleteDocumentTitle').textContent = documentTitle;
+            
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        }
+
+        async function deleteDocument() {
+            if (!documentToDelete) {
+                console.error('No document selected for deletion');
+                return;
+            }
+
+            try {
+                // Show loading state
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                const originalText = confirmBtn.innerHTML;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+                confirmBtn.disabled = true;
+
+                // Make DELETE request
+                const response = await fetch(`/api/documents/${documentToDelete}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    // Close modal
+                    const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                    deleteModal.hide();
+                    
+                    // Show success message and redirect
+                    alert('Document deleted successfully!');
+                    window.location.href = "{% url 'main:home' %}";
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete document');
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+                alert(`Error deleting document: ${error.message}`);
+            } finally {
+                // Reset button state
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
 

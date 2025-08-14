@@ -143,6 +143,23 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Multilingual support
+LANGUAGES = [
+    ('en', 'English'),
+    ('ta', 'Tamil'),
+    ('si', 'Sinhala'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
+# Language detection and translation settings
+DEFAULT_LANGUAGE = 'en'
+SUPPORTED_LANGUAGES = ['en', 'ta', 'si']
+LANGUAGE_DETECTION_ENABLED = True
+TRANSLATION_FALLBACK = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

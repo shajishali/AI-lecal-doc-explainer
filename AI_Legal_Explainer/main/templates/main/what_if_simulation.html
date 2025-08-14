@@ -1,0 +1,360 @@
+{% extends 'main/base.html' %}
+
+{% block title %}What-If Simulation - {{ clause.clause_type|title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">What-If Simulation</h1>
+            
+            <!-- Clause Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Original Clause</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Clause Type: {{ clause.get_clause_type_display }}</h6>
+                    <p class="text-muted">Risk Level: 
+                        <span class="badge {% if clause.risk_level == 'high' %}bg-danger{% elif clause.risk_level == 'medium' %}bg-warning{% else %}bg-success{% endif %}">
+                            {{ clause.get_risk_level_display }}
+                        </span>
+                    </p>
+                    <p class="text-muted">Risk Score: {{ clause.risk_score|floatformat:2 }}</p>
+                    <div class="clause-text">
+                        <strong>Original Text:</strong>
+                        <p class="mt-2 p-3 bg-light rounded">{{ clause.original_text }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenario Selection -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Select Scenario</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for scenario in available_scenarios %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ scenario.name }}</h6>
+                                    <p class="card-text">{{ scenario.description }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <strong>Parameters:</strong> {{ scenario.parameters|join:", " }}
+                                        </small>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm select-scenario" 
+                                            data-scenario-id="{{ scenario.id }}"
+                                            data-scenario-name="{{ scenario.name }}">
+                                        Select This Scenario
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Interface -->
+            <div class="card mb-4" id="simulation-interface" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Simulation Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="simulation-form">
+                        <input type="hidden" id="selected-scenario" name="scenario_type">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Scenario: <span id="scenario-name"></span></label>
+                        </div>
+
+                        <!-- Dynamic parameter inputs will be generated here -->
+                        <div id="parameter-inputs"></div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play"></i> Run Simulation
+                            </button>
+                            <button type="button" class="btn btn-secondary ms-2" id="reset-simulation">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Simulation Results -->
+            <div class="card mb-4" id="simulation-results" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Simulation Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="results-content"></div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'main:document_detail' clause.document.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Document
+                        </a>
+                        <a href="{% url 'main:home' %}" class="btn btn-primary">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scenarioButtons = document.querySelectorAll('.select-scenario');
+    const simulationInterface = document.getElementById('simulation-interface');
+    const simulationForm = document.getElementById('simulation-form');
+    const parameterInputs = document.getElementById('parameter-inputs');
+    const selectedScenarioInput = document.getElementById('selected-scenario');
+    const scenarioNameSpan = document.getElementById('scenario-name');
+    const simulationResults = document.getElementById('simulation-results');
+    const resultsContent = document.getElementById('results-content');
+    const resetButton = document.getElementById('reset-simulation');
+
+    // Scenario selection
+    scenarioButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const scenarioId = this.dataset.scenarioId;
+            const scenarioName = this.dataset.scenarioName;
+            
+            selectedScenarioInput.value = scenarioId;
+            scenarioNameSpan.textContent = scenarioName;
+            
+            // Generate parameter inputs based on scenario
+            generateParameterInputs(scenarioId);
+            
+            simulationInterface.style.display = 'block';
+            simulationResults.style.display = 'none';
+            
+            // Scroll to simulation interface
+            simulationInterface.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    // Generate parameter inputs
+    function generateParameterInputs(scenarioId) {
+        parameterInputs.innerHTML = '';
+        
+        const parameters = {
+            'penalty_modification': [
+                { name: 'penalty_amount', label: 'Penalty Amount ($)', type: 'number', placeholder: '1000' },
+                { name: 'payment_terms', label: 'Payment Terms (days)', type: 'number', placeholder: '30' },
+                { name: 'grace_period', label: 'Grace Period (days)', type: 'number', placeholder: '7' }
+            ],
+            'termination_timing': [
+                { name: 'notice_period', label: 'Notice Period (days)', type: 'number', placeholder: '30' },
+                { name: 'termination_reasons', label: 'Termination Reasons', type: 'text', placeholder: 'Breach, convenience, etc.' },
+                { name: 'compensation', label: 'Compensation Amount ($)', type: 'number', placeholder: '0' }
+            ],
+            'liability_limits': [
+                { name: 'liability_cap', label: 'Liability Cap ($)', type: 'number', placeholder: '100000' },
+                { name: 'exclusions', label: 'Exclusions', type: 'text', placeholder: 'Intentional acts, gross negligence' },
+                { name: 'insurance_requirements', label: 'Insurance Requirements', type: 'text', placeholder: 'Minimum coverage amounts' }
+            ],
+            'auto_renewal_terms': [
+                { name: 'renewal_period', label: 'Renewal Period (months)', type: 'number', placeholder: '12' },
+                { name: 'cancellation_terms', label: 'Cancellation Terms', type: 'text', placeholder: 'Notice period, fees' },
+                { name: 'price_changes', label: 'Price Change Policy', type: 'text', placeholder: 'Annual increase cap, notice period' }
+            ]
+        };
+
+        const scenarioParams = parameters[scenarioId] || [];
+        
+        scenarioParams.forEach(param => {
+            const formGroup = document.createElement('div');
+            formGroup.className = 'mb-3';
+            
+            formGroup.innerHTML = `
+                <label for="${param.name}" class="form-label">${param.label}</label>
+                <input type="${param.type}" 
+                       class="form-control" 
+                       id="${param.name}" 
+                       name="${param.name}" 
+                       placeholder="${param.placeholder}"
+                       required>
+            `;
+            
+            parameterInputs.appendChild(formGroup);
+        });
+    }
+
+    // Form submission
+    simulationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const modifications = {};
+        
+        // Collect parameter values
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'scenario_type') {
+                modifications[key] = value;
+            }
+        }
+        
+        // Run simulation
+        runSimulation(formData.get('scenario_type'), modifications);
+    });
+
+    // Run simulation
+    function runSimulation(scenarioType, modifications) {
+        const data = {
+            clause_id: '{{ clause.id }}',
+            scenario_type: scenarioType,
+            modifications: modifications
+        };
+
+        fetch('{% url "main:ajax_simulate_scenario" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayResults(data.result);
+            } else {
+                alert('Simulation failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Simulation failed. Please try again.');
+        });
+    }
+
+    // Display results
+    function displayResults(result) {
+        resultsContent.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Original Analysis</h6>
+                    <ul>
+                        <li>Overall Risk: ${(result.original_analysis.overall_risk * 100).toFixed(1)}%</li>
+                        <li>Financial Impact: ${(result.original_analysis.risk_factors.financial_impact * 100).toFixed(1)}%</li>
+                        <li>Legal Complexity: ${(result.original_analysis.risk_factors.legal_complexity * 100).toFixed(1)}%</li>
+                        <li>Enforcement Risk: ${(result.original_analysis.risk_factors.enforcement_risk * 100).toFixed(1)}%</li>
+                        <li>Compliance Risk: ${(result.original_analysis.risk_factors.compliance_requirements * 100).toFixed(1)}%</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Modified Analysis</h6>
+                    <ul>
+                        <li>Overall Risk: ${(result.modified_analysis.overall_risk * 100).toFixed(1)}%</li>
+                        <li>Financial Impact: ${(result.modified_analysis.risk_factors.financial_impact * 100).toFixed(1)}%</li>
+                        <li>Legal Complexity: ${(result.modified_analysis.risk_factors.legal_complexity * 100).toFixed(1)}%</li>
+                        <li>Enforcement Risk: ${(result.modified_analysis.risk_factors.enforcement_risk * 100).toFixed(1)}%</li>
+                        <li>Compliance Risk: ${(result.modified_analysis.risk_factors.compliance_requirements * 100).toFixed(1)}%</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Impact Analysis</h6>
+                    <div class="alert ${result.impact_analysis.risk_direction === 'increase' ? 'alert-warning' : 'alert-success'}">
+                        <strong>Risk Change:</strong> ${result.impact_analysis.risk_change_percentage.toFixed(1)}% 
+                        (${result.impact_analysis.risk_direction})
+                        <br>
+                        <strong>Impact Level:</strong> ${result.impact_analysis.impact_level}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+                    <h6>Recommendations</h6>
+                    <ul class="list-group">
+                        ${result.recommendations.map(rec => `<li class="list-group-item">${rec}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        simulationResults.style.display = 'block';
+        simulationResults.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Reset simulation
+    resetButton.addEventListener('click', function() {
+        simulationForm.reset();
+        simulationInterface.style.display = 'none';
+        simulationResults.style.display = 'none';
+        parameterInputs.innerHTML = '';
+    });
+
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+
+<style>
+.clause-text {
+    margin-top: 15px;
+}
+
+.clause-text p {
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn {
+    border-radius: 20px;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.alert {
+    border-radius: 10px;
+}
+
+.list-group-item {
+    border-left: 4px solid #007bff;
+}
+</style>
+{% endblock %}

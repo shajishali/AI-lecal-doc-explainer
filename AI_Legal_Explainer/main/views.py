@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 import json
 import uuid
+import os
 from datetime import datetime
 import logging
 
@@ -234,6 +235,36 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return Response({
                 'message': 'Summary not available for this document'
             }, status=status.HTTP_404_NOT_FOUND)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Custom delete method to handle file cleanup and related data"""
+        document = self.get_object()
+        
+        try:
+            # Get the file path before deleting the document
+            file_path = document.file.path if document.file else None
+            
+            # Delete the document (this will cascade delete related objects)
+            document.delete()
+            
+            # Clean up the physical file if it exists
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Physical file deleted: {file_path}")
+                except OSError as e:
+                    logger.warning(f"Could not delete physical file {file_path}: {e}")
+            
+            return Response({
+                'message': 'Document and all related data deleted successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error deleting document {document.id}: {str(e)}")
+            return Response({
+                'error': 'Failed to delete document',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ClauseViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for Clause model"""
