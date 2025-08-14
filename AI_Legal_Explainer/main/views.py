@@ -1,10 +1,13 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
+from django.contrib import messages
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -46,6 +49,61 @@ def home(request):
 def test(request):
     """Simple test view to verify the app is working"""
     return HttpResponse("<h1>AI Legal Explainer is working! 🎉</h1><p>Django is running successfully.</p>")
+
+def signup(request):
+    """User registration view"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        
+        # Basic validation
+        if not all([username, email, password1, password2]):
+            messages.error(request, 'All fields are required.')
+            return render(request, 'main/signup.html')
+        
+        if password1 != password2:
+            messages.error(request, 'Passwords do not match.')
+            return render(request, 'main/signup.html')
+        
+        if len(password1) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
+            return render(request, 'main/signup.html')
+        
+        # Check if username already exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+            return render(request, 'main/signup.html')
+        
+        # Check if email already exists
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already exists.')
+            return render(request, 'main/signup.html')
+        
+        try:
+            # Create user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password1
+            )
+            
+            # Log the user in
+            user = authenticate(username=username, password=password1)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome {username}! Your account has been created successfully.')
+                return redirect('main:home')
+            else:
+                messages.error(request, 'Account created but login failed. Please try logging in.')
+                return redirect('main:login')
+                
+        except Exception as e:
+            messages.error(request, f'Error creating account: {str(e)}')
+            return render(request, 'main/signup.html')
+    
+    return render(request, 'main/signup.html')
 
 # REST API Viewsets
 class DocumentViewSet(viewsets.ModelViewSet):

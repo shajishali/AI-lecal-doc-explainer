@@ -96,6 +96,12 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'main:upload_document' %}">Upload Document</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:signup' %}">Sign Up</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:login' %}">Login</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -300,6 +306,38 @@
         </div>
     </section>
 
+    <!-- Sign Up Section -->
+    <section class="py-5 bg-light">
+        <div class="container text-center">
+            <h2 class="display-5 fw-bold mb-4">Unlock Advanced Features</h2>
+            <p class="lead mb-4">
+                Create a free account to access advanced dashboards, personalized analytics, and enhanced AI capabilities
+            </p>
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{% url 'main:signup' %}" class="btn btn-success btn-lg w-100">
+                                <i class="fas fa-user-plus me-2"></i>Sign Up Free
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{% url 'main:login' %}" class="btn btn-outline-primary btn-lg w-100">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No credit card required • Instant access • Full feature trial
+                </p>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="py-5">
         <div class="container text-center">
@@ -335,6 +373,12 @@
                     </a>
                     <a href="{% url 'main:language_switcher' %}">
                         <i class="fas fa-globe me-1"></i>Languages
+                    </a>
+                    <a href="{% url 'main:signup' %}">
+                        <i class="fas fa-user-plus me-1"></i>Sign Up
+                    </a>
+                    <a href="{% url 'main:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
                     </a>
                 </div>
                 

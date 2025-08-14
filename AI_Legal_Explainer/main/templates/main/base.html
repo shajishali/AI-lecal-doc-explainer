@@ -89,10 +89,40 @@
                             <i class="fas fa-language"></i> Language
                         </a>
                     </li>
+                    
+                    <!-- Phase 3 Features Dropdown -->
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="phase3Dropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs"></i> Advanced Features
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'main:offline_dashboard' %}">
+                                <i class="fas fa-wifi"></i> Offline Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'main:transparency_controls' %}">
+                                <i class="fas fa-eye"></i> Transparency Controls
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'main:performance_dashboard' %}">
+                                <i class="fas fa-tachometer-alt"></i> Performance Dashboard
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'main:analytics_dashboard' %}">
+                                <i class="fas fa-chart-bar"></i> Analytics Dashboard
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'main:login' %}" title="Login required for Advanced Features">
+                            <i class="fas fa-cogs"></i> Advanced Features
+                            <small class="text-muted">(Login Required)</small>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 
                 <!-- Language Indicator -->
-                <div class="navbar-nav">
+                <div class="navbar-nav me-3">
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-globe"></i> <span id="currentLanguage">English</span>
@@ -103,6 +133,35 @@
                             <li><a class="dropdown-item" href="#" onclick="changeLanguage('si')">🇱🇰 Sinhala</a></li>
                         </ul>
                     </div>
+                </div>
+                
+                <!-- User Authentication -->
+                <div class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><span class="dropdown-item-text text-muted">{{ user.get_full_name|default:user.username }}</span></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'main:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </a></li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url 'main:signup' %}">
+                                <i class="fas fa-user-plus"></i> Sign Up
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a class="nav-link" href="{% url 'main:login' %}">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -134,6 +193,14 @@
                     <a href="{% url 'main:language_switcher' %}">
                         <i class="fas fa-globe me-1"></i>Languages
                     </a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'main:signup' %}">
+                        <i class="fas fa-user-plus me-1"></i>Sign Up
+                    </a>
+                    <a href="{% url 'main:login' %}">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                    {% endif %}
                 </div>
                 
                 <!-- Footer Divider -->
@@ -157,7 +224,7 @@
                         <h6 class="text-dark mb-2">
                             <i class="fas fa-shield-alt me-2"></i>Features
                         </h6>
-                        <p class="small text-muted mb-0">Risk Analysis • What-If Simulation • Clause Library</p>
+                        <p class="small text-muted mb-0">Risk Analysis • What-If Simulation • Clause Library • Offline Mode • Transparency Controls • Performance Optimization • Advanced Analytics</p>
                     </div>
                 </div>
                 
@@ -165,7 +232,7 @@
                 <div class="text-center mt-3">
                     <p class="footer-copyright mb-0">
                         &copy; 2024 AI Legal Explainer. All rights reserved. | 
-                        <span class="text-muted">Phase 2 Features Available</span>
+                        <span class="text-muted">Phase 3 Features Available</span>
                     </p>
                 </div>
             </div>

@@ -1,0 +1,577 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Transparency Controls - AI Legal Explainer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-level-card {
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .detail-level-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .detail-level-card.selected {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+    }
+    
+    .detail-level-card.very-simple { border-left: 4px solid #28a745; }
+    .detail-level-card.simple { border-left: 4px solid #20c997; }
+    .detail-level-card.medium { border-left: 4px solid #007bff; }
+    .detail-level-card.detailed { border-left: 4px solid #fd7e14; }
+    .detail-level-card.legal_detailed { border-left: 4px solid #dc3545; }
+    
+    .preference-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
+    
+    .preference-toggle:hover {
+        background-color: #e9ecef;
+    }
+    
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+    
+    .explanation-preview {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .confidence-meter {
+        width: 100%;
+        height: 20px;
+        background-color: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-eye"></i> Transparency Controls
+            </h1>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Transparency Controls</strong> allow you to customize how AI explanations are presented, 
+                including detail levels, confidence scores, and technical information display.
+            </div>
+            
+            <!-- Explanation Detail Level -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sliders-h"></i> Explanation Detail Level
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Choose how detailed you want AI explanations to be. Higher detail levels provide more comprehensive information but may be more complex.
+                    </p>
+                    
+                    <div class="row">
+                        {% for level in detail_levels %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="detail-level-card {{ level }} {% if preferences.detail_level == level %}selected{% endif %}" 
+                                     onclick="selectDetailLevel('{{ level }}')">
+                                    <h6 class="mb-2">{{ level|title }}</h6>
+                                    
+                                    {% if level == 'very_simple' %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-baby"></i> Very simple explanations with analogies and examples
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Short sentences (max 15 words)</li>
+                                            <li>Simple vocabulary only</li>
+                                            <li>Many examples and analogies</li>
+                                        </ul>
+                                    {% elif level == 'simple' %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-child"></i> Simple explanations suitable for beginners
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Medium sentences (max 25 words)</li>
+                                            <li>Simple vocabulary preferred</li>
+                                            <li>Examples and analogies included</li>
+                                        </ul>
+                                    {% elif level == 'medium' %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-user"></i> Balanced explanations for general users
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Standard sentences (max 35 words)</li>
+                                            <li>Mixed vocabulary</li>
+                                            <li>Examples included</li>
+                                        </ul>
+                                    {% elif level == 'detailed' %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-user-graduate"></i> Detailed explanations for informed users
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Longer sentences (max 50 words)</li>
+                                            <li>Full vocabulary range</li>
+                                            <li>Technical details included</li>
+                                        </ul>
+                                    {% elif level == 'legal_detailed' %}
+                                        <p class="small text-muted mb-2">
+                                            <i class="fas fa-balance-scale"></i> Comprehensive legal explanations
+                                        </p>
+                                        <ul class="small text-muted">
+                                            <li>Extended sentences (max 75 words)</li>
+                                            <li>Legal terminology included</li>
+                                            <li>Full technical details</li>
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transparency Preferences -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog"></i> Transparency Preferences
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="preference-toggle">
+                                <div>
+                                    <h6 class="mb-1">Show Confidence Scores</h6>
+                                    <p class="small text-muted mb-0">
+                                        Display AI confidence levels for explanations and analysis
+                                    </p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showConfidence" 
+                                           {% if preferences.show_confidence %}checked{% endif %}
+                                           onchange="updatePreference('show_confidence_scores', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="preference-toggle">
+                                <div>
+                                    <h6 class="mb-1">Show Source Citations</h6>
+                                    <p class="small text-muted mb-0">
+                                        Include references to legal sources and precedents
+                                    </p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showSources" 
+                                           {% if preferences.show_sources %}checked{% endif %}
+                                           onchange="updatePreference('show_source_citations', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="preference-toggle">
+                                <div>
+                                    <h6 class="mb-1">Show Technical Details</h6>
+                                    <p class="small text-muted mb-0">
+                                        Include technical and legal terminology explanations
+                                    </p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showTechnical" 
+                                           {% if preferences.show_technical %}checked{% endif %}
+                                           onchange="updatePreference('show_technical_details', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="preference-toggle">
+                                <div>
+                                    <h6 class="mb-1">Auto-adjust Complexity</h6>
+                                    <p class="small text-muted mb-0">
+                                        Automatically adjust explanation complexity based on content
+                                    </p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="autoAdjust" 
+                                           {% if preferences.auto_adjust %}checked{% endif %}
+                                           onchange="updatePreference('auto_adjust_complexity', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-secondary me-2" onclick="resetPreferences()">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                        <button class="btn btn-primary" onclick="savePreferences()">
+                            <i class="fas fa-save"></i> Save Preferences
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Explanation Style -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-pen-fancy"></i> Explanation Style
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="explanationStyle" class="form-label">Preferred Explanation Style:</label>
+                            <select class="form-select" id="explanationStyle" onchange="updatePreference('preferred_explanation_style', this.value)">
+                                <option value="conversational" {% if preferences.style == 'conversational' %}selected{% endif %}>
+                                    Conversational - Friendly and approachable
+                                </option>
+                                <option value="educational" {% if preferences.style == 'educational' %}selected{% endif %}>
+                                    Educational - Clear and instructive
+                                </option>
+                                <option value="formal" {% if preferences.style == 'formal' %}selected{% endif %}>
+                                    Formal - Professional and structured
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="confidenceThreshold" class="form-label">Confidence Threshold:</label>
+                            <div class="d-flex align-items-center">
+                                <input type="range" class="form-range me-3" id="confidenceThreshold" 
+                                       min="0.1" max="1.0" step="0.1" value="0.6"
+                                       oninput="updateConfidenceThreshold(this.value)">
+                                <span id="confidenceValue" class="badge bg-primary">60%</span>
+                            </div>
+                            <small class="text-muted">
+                                Only show confidence scores above this threshold
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Explanation Preview -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye"></i> Explanation Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="previewContent" class="form-label">Content to Preview:</label>
+                            <textarea class="form-control" id="previewContent" rows="4" 
+                                      placeholder="Enter content to see how it would be explained with your current settings...">This contract contains an indemnification clause that requires the party to protect against all losses and damages.</textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Preview Result:</label>
+                            <div id="previewResult" class="explanation-preview">
+                                <p class="text-muted">Click "Generate Preview" to see how your content would be explained.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="generatePreview()">
+                            <i class="fas fa-magic"></i> Generate Preview
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current Settings Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list"></i> Current Settings Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Detail Level: <span class="badge bg-primary">{{ preferences.detail_level|title }}</span></h6>
+                            <h6>Explanation Style: <span class="badge bg-info">{{ preferences.style|title }}</span></h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Confidence Display: 
+                                <span class="badge {% if preferences.show_confidence %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if preferences.show_confidence %}Enabled{% else %}Disabled{% endif %}
+                                </span>
+                            </h6>
+                            <h6>Source Citations: 
+                                <span class="badge {% if preferences.show_sources %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if preferences.show_sources %}Enabled{% else %}Disabled{% endif %}
+                                </span>
+                            </h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPreferences = {{ preferences|safe }};
+    
+    // Select detail level
+    function selectDetailLevel(level) {
+        // Remove selected class from all cards
+        document.querySelectorAll('.detail-level-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked card
+        event.currentTarget.classList.add('selected');
+        
+        // Update preference
+        updatePreference('explanation_detail_level', level);
+    }
+    
+    // Update preference
+    function updatePreference(key, value) {
+        currentPreferences[key] = value;
+        
+        // Update UI elements
+        if (key === 'show_confidence_scores') {
+            document.getElementById('showConfidence').checked = value;
+        } else if (key === 'show_source_citations') {
+            document.getElementById('showSources').checked = value;
+        } else if (key === 'show_technical_details') {
+            document.getElementById('showTechnical').checked = value;
+        } else if (key === 'auto_adjust_complexity') {
+            document.getElementById('autoAdjust').checked = value;
+        } else if (key === 'preferred_explanation_style') {
+            document.getElementById('explanationStyle').value = value;
+        } else if (key === 'explanation_detail_level') {
+            // Update detail level selection
+            document.querySelectorAll('.detail-level-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.classList.contains(value)) {
+                    card.classList.add('selected');
+                }
+            });
+        }
+    }
+    
+    // Update confidence threshold
+    function updateConfidenceThreshold(value) {
+        const percentage = Math.round(value * 100);
+        document.getElementById('confidenceValue').textContent = percentage + '%';
+        document.getElementById('confidenceValue').style.width = percentage + '%';
+    }
+    
+    // Generate preview
+    function generatePreview() {
+        const content = document.getElementById('previewContent').value;
+        if (!content.trim()) {
+            showAlert('Please enter content to preview.', 'warning');
+            return;
+        }
+        
+        const previewDiv = document.getElementById('previewResult');
+        previewDiv.innerHTML = '<p class="text-info"><i class="fas fa-spinner fa-spin"></i> Generating preview...</p>';
+        
+        fetch('/api/transparency-controls/generate_explanation/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                content: content,
+                content_type: 'clause',
+                context: {
+                    confidence: 0.85,
+                    sources: ['Contract Law Principles', 'Standard Business Practices'],
+                    technical_details: 'Indemnification clauses are common in business contracts and serve to allocate risk between parties.'
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                previewDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error: ${data.error}</p>`;
+            } else {
+                let previewHtml = `<div class="mb-3"><strong>Detail Level:</strong> ${data.detail_level.replace('_', ' ').toUpperCase()}</div>`;
+                previewHtml += `<div class="mb-3"><strong>Explanation:</strong></div>`;
+                previewHtml += `<div class="bg-white p-3 rounded border">${data.explanation.replace(/\n/g, '<br>')}</div>`;
+                
+                previewDiv.innerHTML = previewHtml;
+            }
+        })
+        .catch(error => {
+            previewDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Failed: ${error}</p>`;
+        });
+    }
+    
+    // Save preferences
+    function savePreferences() {
+        fetch('/api/transparency-preferences/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(currentPreferences)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error saving preferences: ' + data.error, 'danger');
+            } else {
+                showAlert('Preferences saved successfully!', 'success');
+            }
+        })
+        .catch(error => {
+            showAlert('Failed to save preferences: ' + error, 'danger');
+        });
+    }
+    
+    // Reset preferences
+    function resetPreferences() {
+        if (confirm('Are you sure you want to reset all preferences to default values?')) {
+            fetch('/api/transparency-controls/reset_preferences/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert('Error resetting preferences: ' + data.error, 'danger');
+                } else {
+                    showAlert('Preferences reset to defaults successfully!', 'success');
+                    location.reload(); // Refresh to show updated preferences
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to reset preferences: ' + error, 'danger');
+            });
+        }
+    }
+    
+    // Utility functions
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container-fluid');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Initialize confidence threshold display
+    document.addEventListener('DOMContentLoaded', function() {
+        const threshold = 0.6; // Default value
+        updateConfidenceThreshold(threshold);
+    });
+</script>
+{% endblock %}

@@ -268,3 +268,8 @@ LOGGING = {
         },
     },
 }
+
+# Authentication settings
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/home/'
+LOGOUT_REDIRECT_URL = '/welcome/'

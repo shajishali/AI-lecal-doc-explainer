@@ -1,8 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from django.contrib.auth import views as auth_views
 from . import views
 from . import multilingual_views
 from . import enhanced_views
+from . import phase3_views
 
 # Create router for API endpoints
 router = DefaultRouter()
@@ -20,9 +22,20 @@ router.register(r'risk-visualization', enhanced_views.RiskVisualizationViewSet, 
 router.register(r'what-if-simulation', enhanced_views.WhatIfSimulationViewSet, basename='what_if_simulation')
 router.register(r'clause-library', enhanced_views.ClauseLibraryViewSet, basename='clause_library')
 
+# Phase 3 functionality routers
+router.register(r'offline-mode', phase3_views.OfflineModeViewSet, basename='offline_mode')
+router.register(r'transparency-controls', phase3_views.TransparencyControlsViewSet, basename='transparency_controls')
+router.register(r'performance-optimization', phase3_views.PerformanceOptimizationViewSet, basename='performance_optimization')
+router.register(r'advanced-analytics', phase3_views.AdvancedAnalyticsViewSet, basename='advanced_analytics')
+
 app_name = 'main'
 
 urlpatterns = [
+    # Authentication URLs
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='main/login.html'), name='login'),
+    path('accounts/signup/', views.signup, name='signup'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    
     # Traditional Django views
     path('', views.welcome, name='welcome'),
     path('home/', views.home, name='home'),
@@ -41,6 +54,12 @@ urlpatterns = [
     path('clause/<uuid:clause_id>/simulation/', enhanced_views.what_if_simulation_view, name='what_if_simulation'),
     path('clause/<uuid:clause1_id>/compare/<uuid:clause2_id>/', enhanced_views.clause_comparison_view, name='clause_comparison'),
     path('clause-library/', enhanced_views.clause_library_view, name='clause_library'),
+    
+    # Phase 3 functionality views
+    path('offline-dashboard/', phase3_views.offline_dashboard, name='offline_dashboard'),
+    path('transparency-controls/', phase3_views.transparency_controls, name='transparency_controls'),
+    path('performance-dashboard/', phase3_views.performance_dashboard, name='performance_dashboard'),
+    path('analytics-dashboard/', phase3_views.analytics_dashboard, name='analytics_dashboard'),
     
     # API endpoints
     path('api/', include(router.urls)),
@@ -62,6 +81,12 @@ urlpatterns = [
     # Enhanced functionality AJAX endpoints
     path('api/simulate-scenario/', enhanced_views.ajax_simulate_scenario, name='ajax_simulate_scenario'),
     path('api/compare-clauses/', enhanced_views.ajax_compare_clauses, name='ajax_compare_clauses'),
+    
+    # Phase 3 AJAX endpoints
+    path('api/offline-status/', phase3_views.api_offline_status, name='api_offline_status'),
+    path('api/transparency-preferences/', phase3_views.api_transparency_preferences, name='api_transparency_preferences'),
+    path('api/performance-metrics/', phase3_views.api_performance_metrics, name='api_performance_metrics'),
+    path('api/analytics-dashboard/', phase3_views.api_analytics_dashboard, name='api_analytics_dashboard'),
     
     # Multilingual endpoints
     path('language-switcher/', multilingual_views.language_switcher, name='language_switcher'),

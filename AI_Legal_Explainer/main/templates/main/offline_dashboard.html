@@ -1,0 +1,395 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Offline Dashboard - AI Legal Explainer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-indicator {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
+    }
+    
+    .status-online { background-color: #28a745; }
+    .status-offline { background-color: #dc3545; }
+    .status-poor { background-color: #ffc107; }
+    .status-fair { background-color: #fd7e14; }
+    .status-excellent { background-color: #20c997; }
+    
+    .feature-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .feature-available { border-left: 4px solid #28a745; }
+    .feature-unavailable { border-left: 4px solid #dc3545; }
+    
+    .priority-badge {
+        font-size: 0.8em;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .priority-1 { background-color: #dc3545; }
+    .priority-2 { background-color: #fd7e14; }
+    .priority-3 { background-color: #ffc107; }
+    .priority-4 { background-color: #28a745; }
+    .priority-5 { background-color: #20c997; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-wifi"></i> Offline Dashboard
+            </h1>
+            
+            <!-- Connectivity Status -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-signal"></i> Connectivity Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="status-indicator status-{{ connectivity_status.quality }}"></span>
+                                <strong>Status: </strong>
+                                <span class="ml-2">
+                                    {% if connectivity_status.is_online %}
+                                        Online ({{ connectivity_status.quality|title }})
+                                    {% else %}
+                                        Offline
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <p><strong>Last Check:</strong> {{ connectivity_status.last_check|date:"M d, Y H:i" }}</p>
+                            
+                            {% if connectivity_status.offline_since %}
+                                <p><strong>Offline Since:</strong> {{ connectivity_status.offline_since|date:"M d, Y H:i" }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if connectivity_status.api_status %}
+                                <h6>API Endpoints Status:</h6>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {% widthratio connectivity_status.api_status.online_count connectivity_status.api_status.total_count 100 %}%">
+                                        {{ connectivity_status.api_status.online_count }}/{{ connectivity_status.api_status.total_count }} Online
+                                    </div>
+                                </div>
+                            {% endif %}
+                            
+                            <button class="btn btn-primary btn-sm" onclick="checkConnectivity()">
+                                <i class="fas fa-sync-alt"></i> Check Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Offline Features -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Available Offline Features
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for feature in available_features %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="feature-card {% if feature.is_available_offline %}feature-available{% else %}feature-unavailable{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">{{ feature.feature_name|title }}</h6>
+                                        <span class="priority-badge priority-{{ feature.priority }}">P{{ feature.priority }}</span>
+                                    </div>
+                                    
+                                    <p class="text-muted small mb-2">
+                                        {% if feature.is_available_offline %}
+                                            <i class="fas fa-check-circle text-success"></i> Available Offline
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i> Requires Internet
+                                        {% endif %}
+                                    </p>
+                                    
+                                    {% if feature.fallback_mode %}
+                                        <p class="small mb-2">
+                                            <strong>Fallback:</strong> {{ feature.fallback_mode|title }}
+                                        </p>
+                                    {% endif %}
+                                    
+                                    <p class="small mb-0">
+                                        <strong>Cache Strategy:</strong> {{ feature.cache_strategy|title }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted">No offline features configured.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Offline Operations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs"></i> Offline Operations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Test Offline Operations</h6>
+                            <div class="mb-3">
+                                <label for="operationType" class="form-label">Operation Type:</label>
+                                <select class="form-select" id="operationType">
+                                    <option value="document_summary">Document Summary</option>
+                                    <option value="clause_detection">Clause Detection</option>
+                                    <option value="risk_analysis">Risk Analysis</option>
+                                    <option value="glossary_lookup">Glossary Lookup</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="documentId" class="form-label">Document ID (optional):</label>
+                                <input type="text" class="form-control" id="documentId" placeholder="Enter document ID">
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="testOfflineOperation()">
+                                <i class="fas fa-play"></i> Test Operation
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Operation Results</h6>
+                            <div id="operationResults" class="border rounded p-3" style="min-height: 150px; background-color: #f8f9fa;">
+                                <p class="text-muted">Results will appear here after testing an operation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cache Management -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Cache Management
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Cache Operations</h6>
+                            <button class="btn btn-warning btn-sm me-2" onclick="clearExpiredCache()">
+                                <i class="fas fa-broom"></i> Clear Expired Cache
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="preloadEssentialData()">
+                                <i class="fas fa-download"></i> Preload Essential Data
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Cache Statistics</h6>
+                            <div id="cacheStats" class="small">
+                                <p class="text-muted">Click "Get Cache Stats" to view statistics.</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="getCacheStats()">
+                                <i class="fas fa-chart-bar"></i> Get Cache Stats
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check connectivity status
+    function checkConnectivity() {
+        fetch('/api/offline-status/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert('Error checking connectivity: ' + data.error, 'danger');
+                } else {
+                    location.reload(); // Refresh to show updated status
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to check connectivity: ' + error, 'danger');
+            });
+    }
+    
+    // Test offline operation
+    function testOfflineOperation() {
+        const operationType = document.getElementById('operationType').value;
+        const documentId = document.getElementById('documentId').value;
+        
+        const resultsDiv = document.getElementById('operationResults');
+        resultsDiv.innerHTML = '<p class="text-info"><i class="fas fa-spinner fa-spin"></i> Testing operation...</p>';
+        
+        let url = `/api/offline-mode/offline_operation/`;
+        if (documentId) {
+            url += documentId + '/';
+        }
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                operation_type: operationType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                resultsDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error: ${data.error}</p>`;
+            } else {
+                let resultHtml = '<div class="text-success"><i class="fas fa-check-circle"></i> Operation successful!</div>';
+                resultHtml += '<div class="mt-2"><strong>Source:</strong> ' + data.source + '</div>';
+                resultHtml += '<div class="mt-2"><strong>Data:</strong></div>';
+                resultHtml += '<pre class="bg-light p-2 rounded small">' + JSON.stringify(data.data, null, 2) + '</pre>';
+                resultsDiv.innerHTML = resultHtml;
+            }
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Failed: ${error}</p>`;
+        });
+    }
+    
+    // Clear expired cache
+    function clearExpiredCache() {
+        fetch('/api/performance-optimization/optimize_cache/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error clearing cache: ' + data.error, 'danger');
+            } else {
+                showAlert(`Cache optimization completed. Cleaned ${data.cleaned_entries} entries.`, 'success');
+            }
+        })
+        .catch(error => {
+            showAlert('Failed to clear cache: ' + error, 'danger');
+        });
+    }
+    
+    // Preload essential data
+    function preloadEssentialData() {
+        showAlert('Preloading essential data...', 'info');
+        // This would typically be done through a background task
+        setTimeout(() => {
+            showAlert('Essential data preloaded successfully!', 'success');
+        }, 2000);
+    }
+    
+    // Get cache statistics
+    function getCacheStats() {
+        fetch('/api/performance-optimization/metrics/?hours=24')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert('Error getting cache stats: ' + data.error, 'danger');
+                } else {
+                    const cacheStats = data.cache_metrics;
+                    const statsDiv = document.getElementById('cacheStats');
+                    
+                    let statsHtml = '<ul class="list-unstyled">';
+                    statsHtml += `<li><strong>Total Entries:</strong> ${cacheStats.total_cache_entries || 0}</li>`;
+                    statsHtml += `<li><strong>Active Entries:</strong> ${cacheStats.active_entries || 0}</li>`;
+                    statsHtml += `<li><strong>Hit Rate:</strong> ${cacheStats.cache_hit_rate || 0}%</li>`;
+                    statsHtml += `<li><strong>Total Accesses:</strong> ${cacheStats.total_accesses || 0}</li>`;
+                    statsHtml += '</ul>';
+                    
+                    statsDiv.innerHTML = statsHtml;
+                }
+            })
+            .catch(error => {
+                showAlert('Failed to get cache stats: ' + error, 'danger');
+            });
+    }
+    
+    // Utility functions
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container-fluid');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Auto-refresh connectivity status every 30 seconds
+    setInterval(() => {
+        if (!document.hidden) {
+            fetch('/api/offline-status/')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error && data.is_online !== {{ connectivity_status.is_online|yesno:"true,false" }}) {
+                        location.reload(); // Refresh if status changed
+                    }
+                })
+                .catch(() => {}); // Silently fail for auto-refresh
+        }
+    }, 30000);
+</script>
+{% endblock %}

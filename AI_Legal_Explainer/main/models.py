@@ -238,3 +238,158 @@ class UserLanguagePreference(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.preferred_language}"
+
+class ConnectivityStatus(models.Model):
+    """Model for tracking connectivity status and offline mode"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    is_online = models.BooleanField(default=True)
+    last_online_check = models.DateTimeField(auto_now=True)
+    offline_since = models.DateTimeField(null=True, blank=True)
+    connection_quality = models.CharField(max_length=20, default='good', choices=[
+        ('excellent', 'Excellent'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+        ('offline', 'Offline'),
+    ])
+    api_endpoints_status = models.JSONField(default=dict)  # Status of various API endpoints
+    
+    class Meta:
+        verbose_name_plural = "Connectivity Statuses"
+    
+    def __str__(self):
+        return f"Connectivity: {'Online' if self.is_online else 'Offline'}"
+
+class LocalCache(models.Model):
+    """Model for local data caching in offline mode"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cache_key = models.CharField(max_length=255, unique=True)
+    cache_data = models.JSONField()
+    cache_type = models.CharField(max_length=50, choices=[
+        ('document_summary', 'Document Summary'),
+        ('clause_analysis', 'Clause Analysis'),
+        ('risk_assessment', 'Risk Assessment'),
+        ('glossary_term', 'Glossary Term'),
+        ('ai_model', 'AI Model'),
+        ('user_preferences', 'User Preferences'),
+    ])
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_accessed = models.DateTimeField(auto_now=True)
+    access_count = models.IntegerField(default=0)
+    
+    class Meta:
+        verbose_name_plural = "Local Caches"
+        indexes = [
+            models.Index(fields=['cache_key']),
+            models.Index(fields=['cache_type']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.cache_type}: {self.cache_key}"
+    
+    def is_expired(self):
+        """Check if cache entry has expired"""
+        if self.expires_at is None:
+            return False
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+class OfflineFeature(models.Model):
+    """Model for managing offline feature availability"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    feature_name = models.CharField(max_length=100, unique=True)
+    is_available_offline = models.BooleanField(default=True)
+    requires_internet = models.BooleanField(default=False)
+    fallback_mode = models.CharField(max_length=50, blank=True, help_text="Alternative mode when offline")
+    local_model_required = models.BooleanField(default=False)
+    cache_strategy = models.CharField(max_length=50, default='persistent', choices=[
+        ('persistent', 'Persistent Cache'),
+        ('temporary', 'Temporary Cache'),
+        ('no_cache', 'No Caching'),
+    ])
+    priority = models.IntegerField(default=5, help_text="Priority for offline mode (1-10)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['priority', 'feature_name']
+    
+    def __str__(self):
+        return f"{self.feature_name} (Offline: {self.is_available_offline})"
+
+class TransparencyPreference(models.Model):
+    """Model for user transparency and explanation detail preferences"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transparency_preferences')
+    explanation_detail_level = models.CharField(max_length=20, default='medium', choices=[
+        ('very_simple', 'Very Simple'),
+        ('simple', 'Simple'),
+        ('medium', 'Medium'),
+        ('detailed', 'Detailed'),
+        ('legal_detailed', 'Legal Detailed'),
+    ])
+    show_confidence_scores = models.BooleanField(default=True)
+    show_source_citations = models.BooleanField(default=True)
+    show_technical_details = models.BooleanField(default=False)
+    auto_adjust_complexity = models.BooleanField(default=True)
+    preferred_explanation_style = models.CharField(max_length=50, default='conversational', choices=[
+        ('conversational', 'Conversational'),
+        ('formal', 'Formal'),
+        ('technical', 'Technical'),
+        ('educational', 'Educational'),
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'explanation_detail_level']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.explanation_detail_level}"
+
+class PerformanceMetrics(models.Model):
+    """Model for tracking performance metrics and analytics"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='performance_metrics', null=True, blank=True)
+    session_id = models.CharField(max_length=100, blank=True)
+    feature_name = models.CharField(max_length=100)
+    operation_type = models.CharField(max_length=50, choices=[
+        ('document_upload', 'Document Upload'),
+        ('text_extraction', 'Text Extraction'),
+        ('ai_summarization', 'AI Summarization'),
+        ('clause_detection', 'Clause Detection'),
+        ('risk_analysis', 'Risk Analysis'),
+        ('chat_query', 'Chat Query'),
+        ('glossary_lookup', 'Glossary Lookup'),
+        ('offline_operation', 'Offline Operation'),
+    ])
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    duration_ms = models.FloatField(null=True, blank=True)
+    success = models.BooleanField(default=True)
+    error_message = models.TextField(blank=True)
+    resource_usage = models.JSONField(default=dict)  # CPU, memory, network usage
+    cache_hit = models.BooleanField(default=False)
+    offline_mode = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['feature_name']),
+            models.Index(fields=['operation_type']),
+            models.Index(fields=['start_time']),
+            models.Index(fields=['success']),
+        ]
+    
+    def __str__(self):
+        return f"{self.feature_name} - {self.operation_type} ({self.duration_ms}ms)"
+    
+    def calculate_duration(self):
+        """Calculate duration in milliseconds"""
+        if self.start_time and self.end_time:
+            delta = self.end_time - self.start_time
+            self.duration_ms = delta.total_seconds() * 1000
+            self.save()
+        return self.duration_ms

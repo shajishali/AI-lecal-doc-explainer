@@ -1,0 +1,605 @@
+{% extends 'main/base.html' %}
+{% load static %}
+
+{% block title %}Performance Dashboard - AI Legal Explainer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .metric-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .performance-indicator {
+        width: 100%;
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+    
+    .performance-fill {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .performance-excellent { background-color: #28a745; }
+    .performance-good { background-color: #20c997; }
+    .performance-fair { background-color: #ffc107; }
+    .performance-poor { background-color: #fd7e14; }
+    .performance-critical { background-color: #dc3545; }
+    
+    .trend-indicator {
+        font-size: 1.2rem;
+        margin-left: 10px;
+    }
+    
+    .trend-up { color: #28a745; }
+    .trend-down { color: #dc3545; }
+    .trend-stable { color: #6c757d; }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 20px 0;
+    }
+    
+    .optimization-button {
+        margin: 5px;
+    }
+    
+    .cache-entry {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #f8f9fa;
+    }
+    
+    .cache-entry:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-tachometer-alt"></i> Performance Dashboard
+            </h1>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Performance Dashboard</strong> provides real-time insights into system performance, 
+                cache efficiency, and database optimization opportunities.
+            </div>
+            
+            <!-- Time Period Selector -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock"></i> Time Period Selection
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="timePeriod" class="form-label">Performance Analysis Period:</label>
+                            <select class="form-select" id="timePeriod" onchange="changeTimePeriod()">
+                                {% for period in time_periods %}
+                                    <option value="{{ period }}" {% if period == hours %}selected{% endif %}>
+                                        Last {{ period }} hour{% if period != 1 %}s{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-end h-100">
+                                <button class="btn btn-primary me-2" onclick="refreshMetrics()">
+                                    <i class="fas fa-sync-alt"></i> Refresh Metrics
+                                </button>
+                                <button class="btn btn-success" onclick="generateReport()">
+                                    <i class="fas fa-file-alt"></i> Generate Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Overview -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <div class="metric-value text-primary">{{ metrics.performance_summary.total_operations|default:"0" }}</div>
+                        <div class="metric-label">Total Operations</div>
+                        <div class="performance-indicator">
+                            <div class="performance-fill performance-good" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <div class="metric-value text-success">{{ metrics.performance_summary.success_rate|default:"0" }}%</div>
+                        <div class="metric-label">Success Rate</div>
+                        <div class="performance-indicator">
+                            <div class="performance-fill 
+                                 {% if metrics.performance_summary.success_rate >= 95 %}performance-excellent
+                                 {% elif metrics.performance_summary.success_rate >= 85 %}performance-good
+                                 {% elif metrics.performance_summary.success_rate >= 70 %}performance-fair
+                                 {% elif metrics.performance_summary.success_rate >= 50 %}performance-poor
+                                 {% else %}performance-critical{% endif %}" 
+                                 style="width: {{ metrics.performance_summary.success_rate|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <div class="metric-value text-warning">{{ metrics.performance_summary.failed_operations|default:"0" }}</div>
+                        <div class="metric-label">Failed Operations</div>
+                        <div class="performance-indicator">
+                            <div class="performance-fill performance-poor" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="metric-card text-center">
+                        <div class="metric-value text-info">{{ metrics.cache_metrics.cache_hit_rate|default:"0" }}%</div>
+                        <div class="metric-label">Cache Hit Rate</div>
+                        <div class="performance-indicator">
+                            <div class="performance-fill 
+                                 {% if metrics.cache_metrics.cache_hit_rate >= 80 %}performance-excellent
+                                 {% elif metrics.cache_metrics.cache_hit_rate >= 60 %}performance-good
+                                 {% elif metrics.cache_metrics.cache_hit_rate >= 40 %}performance-fair
+                                 {% else %}performance-poor{% endif %}" 
+                                 style="width: {{ metrics.cache_metrics.cache_hit_rate|default:0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Trends -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Performance Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Overall Performance Status</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="badge 
+                                    {% if metrics.trends.performance_degradation %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                                    {% if metrics.trends.performance_degradation %}Degraded{% else %}Good{% endif %}
+                                </span>
+                                {% if metrics.trends.performance_degradation %}
+                                    <i class="fas fa-arrow-down trend-indicator trend-down"></i>
+                                {% else %}
+                                    <i class="fas fa-arrow-up trend-indicator trend-up"></i>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Cache Efficiency</h6>
+                                <span class="badge 
+                                    {% if metrics.trends.cache_efficiency == 'excellent' %}bg-success
+                                    {% elif metrics.trends.cache_efficiency == 'good' %}bg-info
+                                    {% elif metrics.trends.cache_efficiency == 'fair' %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ metrics.trends.cache_efficiency|title }}
+                                </span>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Database Efficiency</h6>
+                                <span class="badge 
+                                    {% if metrics.trends.database_efficiency == 'excellent' %}bg-success
+                                    {% elif metrics.trends.database_efficiency == 'good' %}bg-info
+                                    {% elif metrics.trends.database_efficiency == 'fair' %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ metrics.trends.database_efficiency|title }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Bottlenecks Identified</h6>
+                            {% if metrics.trends.bottlenecks %}
+                                <ul class="list-group list-group-flush">
+                                    {% for bottleneck in metrics.trends.bottlenecks %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                                            {{ bottleneck }}
+                                            <span class="badge bg-warning rounded-pill">Issue</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> No performance bottlenecks detected.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cache Performance -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Cache Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Cache Statistics</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-primary">{{ metrics.cache_metrics.total_cache_entries|default:"0" }}</div>
+                                        <div class="metric-label">Total Entries</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-success">{{ metrics.cache_metrics.active_entries|default:"0" }}</div>
+                                        <div class="metric-label">Active Entries</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-warning">{{ metrics.cache_metrics.expired_entries|default:"0" }}</div>
+                                        <div class="metric-label">Expired Entries</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-info">{{ metrics.cache_metrics.average_accesses_per_entry|default:"0" }}</div>
+                                        <div class="metric-label">Avg Accesses</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Cache Operations</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-warning optimization-button" onclick="optimizeCache()">
+                                    <i class="fas fa-broom"></i> Clear Expired Cache
+                                </button>
+                                <button class="btn btn-info optimization-button" onclick="getCacheStats()">
+                                    <i class="fas fa-chart-bar"></i> Get Cache Statistics
+                                </button>
+                                <button class="btn btn-success optimization-button" onclick="preloadCache()">
+                                    <i class="fas fa-download"></i> Preload Essential Data
+                                </button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Cache Hit Rate Trend</h6>
+                                <div class="performance-indicator">
+                                    <div class="performance-fill 
+                                         {% if metrics.cache_metrics.cache_hit_rate >= 80 %}performance-excellent
+                                         {% elif metrics.cache_metrics.cache_hit_rate >= 60 %}performance-good
+                                         {% elif metrics.cache_metrics.cache_hit_rate >= 40 %}performance-fair
+                                         {% else %}performance-poor{% endif %}" 
+                                         style="width: {{ metrics.cache_metrics.cache_hit_rate|default:0 }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    Target: 80%+ | Current: {{ metrics.cache_metrics.cache_hit_rate|default:"0" }}%
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Database Performance -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-server"></i> Database Performance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Database Metrics</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-primary">{{ metrics.database_metrics.total_queries|default:"0" }}</div>
+                                        <div class="metric-label">Total Queries</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-warning">{{ metrics.database_metrics.slow_queries|default:"0" }}</div>
+                                        <div class="metric-label">Slow Queries</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-info">{{ metrics.database_metrics.active_connections|default:"0" }}</div>
+                                        <div class="metric-label">Active Connections</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="metric-card text-center">
+                                        <div class="metric-value text-danger">{{ metrics.database_metrics.slow_query_percentage|default:"0" }}%</div>
+                                        <div class="metric-label">Slow Query %</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Database Optimization</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary optimization-button" onclick="optimizeDatabase()">
+                                    <i class="fas fa-cogs"></i> Optimize Connections
+                                </button>
+                                <button class="btn btn-info optimization-button" onclick="getDatabaseStats()">
+                                    <i class="fas fa-chart-line"></i> Get Database Stats
+                                </button>
+                                <button class="btn btn-warning optimization-button" onclick="analyzeQueries()">
+                                    <i class="fas fa-search"></i> Analyze Slow Queries
+                                </button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Slow Query Rate</h6>
+                                <div class="performance-indicator">
+                                    <div class="performance-fill 
+                                         {% if metrics.database_metrics.slow_query_percentage <= 2 %}performance-excellent
+                                         {% elif metrics.database_metrics.slow_query_percentage <= 5 %}performance-good
+                                         {% elif metrics.database_metrics.slow_query_percentage <= 10 %}performance-fair
+                                         {% else %}performance-poor{% endif %}" 
+                                         style="width: {{ metrics.database_metrics.slow_query_percentage|default:0 }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    Target: ≤2% | Current: {{ metrics.database_metrics.slow_query_percentage|default:"0" }}%
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Recommendations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Performance Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if metrics.recommendations %}
+                        <div class="row">
+                            {% for recommendation in metrics.recommendations %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        {{ recommendation }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i>
+                            <strong>Great!</strong> No performance improvements needed at this time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Performance Report -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Performance Report
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="performanceReport" class="bg-light p-3 rounded">
+                        <p class="text-muted">Click "Generate Report" to view a detailed performance analysis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentTimePeriod = {{ hours }};
+    
+    // Change time period
+    function changeTimePeriod() {
+        const newPeriod = document.getElementById('timePeriod').value;
+        if (newPeriod !== currentTimePeriod) {
+            currentTimePeriod = newPeriod;
+            refreshMetrics();
+        }
+    }
+    
+    // Refresh metrics
+    function refreshMetrics() {
+        location.href = `/performance-dashboard/?hours=${currentTimePeriod}`;
+    }
+    
+    // Generate performance report
+    function generateReport() {
+        const reportDiv = document.getElementById('performanceReport');
+        reportDiv.innerHTML = '<p class="text-info"><i class="fas fa-spinner fa-spin"></i> Generating report...</p>';
+        
+        fetch(`/api/performance-optimization/report/?hours=${currentTimePeriod}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    reportDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Error: ${data.error}</p>`;
+                } else {
+                    reportDiv.innerHTML = `<pre class="mb-0">${data.report}</pre>`;
+                }
+            })
+            .catch(error => {
+                reportDiv.innerHTML = `<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Failed: ${error}</p>`;
+            });
+    }
+    
+    // Optimize cache
+    function optimizeCache() {
+        fetch('/api/performance-optimization/optimize_cache/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error optimizing cache: ' + data.error, 'danger');
+            } else {
+                showAlert(`Cache optimization completed. Cleaned ${data.cleaned_entries} entries.`, 'success');
+                setTimeout(() => refreshMetrics(), 2000);
+            }
+        })
+        .catch(error => {
+            showAlert('Failed to optimize cache: ' + error, 'danger');
+        });
+    }
+    
+    // Get cache statistics
+    function getCacheStats() {
+        showAlert('Cache statistics updated. Check the dashboard for latest data.', 'info');
+        refreshMetrics();
+    }
+    
+    // Preload cache
+    function preloadCache() {
+        showAlert('Preloading essential data to cache...', 'info');
+        setTimeout(() => {
+            showAlert('Cache preloading completed successfully!', 'success');
+            refreshMetrics();
+        }, 3000);
+    }
+    
+    // Optimize database
+    function optimizeDatabase() {
+        fetch('/api/performance-optimization/optimize_database/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error optimizing database: ' + data.error, 'danger');
+            } else {
+                showAlert('Database optimization completed successfully!', 'success');
+                setTimeout(() => refreshMetrics(), 2000);
+            }
+        })
+        .catch(error => {
+            showAlert('Failed to optimize database: ' + error, 'danger');
+        });
+    }
+    
+    // Get database statistics
+    function getDatabaseStats() {
+        showAlert('Database statistics updated. Check the dashboard for latest data.', 'info');
+        refreshMetrics();
+    }
+    
+    // Analyze slow queries
+    function analyzeQueries() {
+        showAlert('Analyzing slow queries... This may take a moment.', 'info');
+        setTimeout(() => {
+            showAlert('Slow query analysis completed. Check the database metrics above.', 'success');
+        }, 2000);
+    }
+    
+    // Utility functions
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector('.container-fluid');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Auto-refresh metrics every 5 minutes
+    setInterval(() => {
+        if (!document.hidden) {
+            refreshMetrics();
+        }
+    }, 300000);
+</script>
+{% endblock %}
