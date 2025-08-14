@@ -91,8 +91,32 @@ WSGI_APPLICATION = "AI_Legal_Explainer.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Check if we're on Render (production)
-if os.getenv('RENDER'):
+# Check if we're on PythonAnywhere (production)
+if os.getenv('PYTHONANYWHERE_SITE_NAME'):
+    # Production database (MySQL on PythonAnywhere)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'yourusername$ai_legal_explainer'),
+            'USER': os.getenv('DB_USER', 'yourusername'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'yourusername.mysql.pythonanywhere-services.com'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
+    }
+    # Production static file handling
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # PythonAnywhere specific settings
+    ALLOWED_HOSTS = [
+        'yourusername.pythonanywhere.com',
+        'yourusername.pythonanywhere-services.com',
+        '.pythonanywhere.com',
+        '.pythonanywhere-services.com',
+    ]
+elif os.getenv('RENDER'):
     # Production database (PostgreSQL on Render)
     DATABASES = {
         'default': {
@@ -101,9 +125,11 @@ if os.getenv('RENDER'):
             'USER': os.getenv('DATABASE_USER', 'ai_legal_explainer_user'),
             'PASSWORD': os.getenv('DATABASE_PASSWORD', ''),
             'HOST': os.getenv('DATABASE_HOST', ''),
-            'PORT': os.getenv('DATABASE_PORT', '5432'),
+            'PORT': os.getenv('DB_PORT', '5432'),
         }
     }
+    # Production static file handling
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 else:
     # Development database
     DATABASES = {
@@ -119,7 +145,6 @@ else:
             },
         }
     }
-
     # Fallback to SQLite for development if MySQL is not available
     if DEBUG and not os.getenv('DB_HOST'):
         DATABASES = {
@@ -216,11 +241,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
-    "http://127.0.0.1:8000",
+    "http://127.0.0.0:8000",
     # Vercel domains
     "https://*.vercel.app",
     "https://*.vercel.com",
     "https://ai-lecal-doc-explainer.vercel.app",
+    # PythonAnywhere domains
+    "https://*.pythonanywhere.com",
+    "https://*.pythonanywhere-services.com",
 ]
 
 # Messages framework
