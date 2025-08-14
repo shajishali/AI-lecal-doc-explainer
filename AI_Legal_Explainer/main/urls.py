@@ -5,6 +5,7 @@ from . import views
 from . import multilingual_views
 from . import enhanced_views
 from . import phase3_views
+from . import phase4_views
 
 # Create router for API endpoints
 router = DefaultRouter()
@@ -61,6 +62,29 @@ urlpatterns = [
     path('performance-dashboard/', phase3_views.performance_dashboard, name='performance_dashboard'),
     path('analytics-dashboard/', phase3_views.analytics_dashboard, name='analytics_dashboard'),
     
+    # Phase 4 functionality views - Security & Compliance
+    path('security-dashboard/', phase4_views.security_dashboard, name='security_dashboard'),
+    path('compliance-dashboard/', phase4_views.compliance_dashboard, name='compliance_dashboard'),
+    path('privacy-center/', phase4_views.privacy_center, name='privacy_center'),
+    path('run-security-audit/', phase4_views.run_security_audit, name='run_security_audit'),
+    
+    # Phase 4 functionality views - Testing & Quality Assurance
+    path('testing-dashboard/', phase4_views.testing_dashboard, name='testing_dashboard'),
+    path('quality-assurance/', phase4_views.quality_assurance, name='quality_assurance'),
+    path('run-test-suite/', phase4_views.run_test_suite, name='run_test_suite'),
+    
+    # Phase 4 functionality views - Documentation & Training
+    path('documentation-portal/', phase4_views.documentation_portal, name='documentation_portal'),
+    path('training-portal/', phase4_views.training_portal, name='training_portal'),
+    path('support-portal/', phase4_views.support_portal, name='support_portal'),
+    path('create-support-ticket/', phase4_views.create_support_ticket, name='create_support_ticket'),
+    
+    # Phase 4 functionality views - Production Management
+    path('production-dashboard/', phase4_views.production_dashboard, name='production_dashboard'),
+    path('setup-monitoring/', phase4_views.setup_monitoring, name='setup_monitoring'),
+    path('create-backup/', phase4_views.create_backup, name='create_backup'),
+    path('setup-onboarding/', phase4_views.setup_onboarding, name='setup_onboarding'),
+    
     # API endpoints
     path('api/', include(router.urls)),
     
@@ -87,6 +111,13 @@ urlpatterns = [
     path('api/transparency-preferences/', phase3_views.api_transparency_preferences, name='api_transparency_preferences'),
     path('api/performance-metrics/', phase3_views.api_performance_metrics, name='api_performance_metrics'),
     path('api/analytics-dashboard/', phase3_views.api_analytics_dashboard, name='api_analytics_dashboard'),
+    
+    # Phase 4 API endpoints
+    path('api/security-status/', phase4_views.api_security_status, name='api_security_status'),
+    path('api/testing-results/', phase4_views.api_testing_results, name='api_testing_results'),
+    path('api/production-status/', phase4_views.api_production_status, name='api_production_status'),
+    path('api/health-check/', phase4_views.api_health_check, name='api_health_check'),
+    path('api/update-consent/', phase4_views.update_consent, name='api_update_consent'),
     
     # Multilingual endpoints
     path('language-switcher/', multilingual_views.language_switcher, name='language_switcher'),

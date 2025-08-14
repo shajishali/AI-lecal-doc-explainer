@@ -273,3 +273,43 @@ LOGGING = {
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/home/'
 LOGOUT_REDIRECT_URL = '/welcome/'
+
+# Phase 4 Configuration
+
+# Security Configuration
+SECURITY_CONFIG = {
+    'encryption_key': os.getenv('ENCRYPTION_KEY'),
+    'audit_logging': True,
+    'compliance_mode': 'GDPR',  # or 'PDPA'
+    'data_retention_days': 2555,  # 7 years
+    'consent_required': True,
+    'privacy_policy_required': True,
+    'rate_limiting': {
+        'requests_per_minute': 60,
+        'burst_limit': 100,
+    }
+}
+
+# Testing Configuration
+TESTING_CONFIG = {
+    'automated_testing': True,
+    'test_coverage_threshold': 80.0,
+    'performance_testing': True,
+    'security_testing': True,
+    'test_reporting': True,
+    'continuous_integration': True,
+}
+
+# Production Configuration
+PRODUCTION_CONFIG = {
+    'environment': 'development',  # Change to 'production' for production deployment
+    'monitoring_enabled': True,
+    'alerting_enabled': True,
+    'backup_enabled': True,
+    'disaster_recovery': True,
+    'user_onboarding': True,
+    'performance_monitoring': True,
+}
+
+# Environment variable
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')

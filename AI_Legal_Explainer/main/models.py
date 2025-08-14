@@ -393,3 +393,612 @@ class PerformanceMetrics(models.Model):
             self.duration_ms = delta.total_seconds() * 1000
             self.save()
         return self.duration_ms
+
+# Phase 4 Models - Security & Compliance
+
+class SecurityAudit(models.Model):
+    """Model for tracking security audits and assessments"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    audit_type = models.CharField(max_length=50, choices=[
+        ('security_scan', 'Security Scan'),
+        ('penetration_test', 'Penetration Test'),
+        ('vulnerability_assessment', 'Vulnerability Assessment'),
+        ('compliance_check', 'Compliance Check'),
+        ('code_review', 'Code Review'),
+        ('infrastructure_audit', 'Infrastructure Audit'),
+    ])
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('remediated', 'Remediated'),
+    ])
+    severity = models.CharField(max_length=20, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ])
+    findings = models.JSONField(default=dict)
+    recommendations = models.TextField(blank=True)
+    remediation_actions = models.TextField(blank=True)
+    auditor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    next_audit_date = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['audit_type']),
+            models.Index(fields=['status']),
+            models.Index(fields=['severity']),
+        ]
+    
+    def __str__(self):
+        return f"{self.audit_type} - {self.status} ({self.severity})"
+
+class ComplianceRecord(models.Model):
+    """Model for tracking compliance with regulations (GDPR, PDPA, etc.)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    regulation = models.CharField(max_length=50, choices=[
+        ('GDPR', 'General Data Protection Regulation'),
+        ('PDPA', 'Personal Data Protection Act'),
+        ('CCPA', 'California Consumer Privacy Act'),
+        ('LGPD', 'Lei Geral de Proteção de Dados'),
+        ('PIPEDA', 'Personal Information Protection and Electronic Documents Act'),
+    ])
+    compliance_status = models.CharField(max_length=20, choices=[
+        ('compliant', 'Compliant'),
+        ('non_compliant', 'Non-Compliant'),
+        ('partially_compliant', 'Partially Compliant'),
+        ('under_review', 'Under Review'),
+    ])
+    requirements = models.JSONField(default=dict)
+    compliance_evidence = models.TextField(blank=True)
+    gaps = models.TextField(blank=True)
+    action_plan = models.TextField(blank=True)
+    last_assessment = models.DateTimeField(auto_now_add=True)
+    next_assessment = models.DateTimeField(null=True, blank=True)
+    compliance_officer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-last_assessment']
+        unique_together = ['regulation']
+    
+    def __str__(self):
+        return f"{self.regulation} - {self.compliance_status}"
+
+class DataRetentionPolicy(models.Model):
+    """Model for managing data retention policies"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    data_type = models.CharField(max_length=100, choices=[
+        ('user_data', 'User Data'),
+        ('document_data', 'Document Data'),
+        ('analytics_data', 'Analytics Data'),
+        ('audit_logs', 'Audit Logs'),
+        ('system_logs', 'System Logs'),
+        ('backup_data', 'Backup Data'),
+    ])
+    retention_period_days = models.IntegerField(help_text="Number of days to retain data")
+    retention_reason = models.TextField(help_text="Legal or business reason for retention")
+    disposal_method = models.CharField(max_length=50, choices=[
+        ('secure_deletion', 'Secure Deletion'),
+        ('anonymization', 'Anonymization'),
+        ('archival', 'Archival'),
+        ('transfer', 'Transfer to Third Party'),
+    ])
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['data_type']
+        unique_together = ['data_type']
+    
+    def __str__(self):
+        return f"{self.data_type} - {self.retention_period_days} days"
+
+class UserConsent(models.Model):
+    """Model for tracking user consent for data processing"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consents')
+    consent_type = models.CharField(max_length=50, choices=[
+        ('data_processing', 'Data Processing'),
+        ('marketing', 'Marketing Communications'),
+        ('analytics', 'Analytics and Tracking'),
+        ('third_party', 'Third Party Sharing'),
+        ('cookies', 'Cookie Usage'),
+        ('location', 'Location Data'),
+    ])
+    granted = models.BooleanField(default=False)
+    consent_text = models.TextField(help_text="Text presented to user for consent")
+    consent_version = models.CharField(max_length=20, default='1.0')
+    granted_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-granted_at']
+        unique_together = ['user', 'consent_type', 'consent_version']
+    
+    def __str__(self):
+        status = "Granted" if self.granted else "Revoked"
+        return f"{self.user.username} - {self.consent_type} ({status})"
+
+class PrivacyPolicy(models.Model):
+    """Model for managing privacy policies"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    version = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    language = models.CharField(max_length=10, choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    effective_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-effective_date']
+    
+    def __str__(self):
+        return f"Privacy Policy v{self.version} ({self.language}) - {self.effective_date.date()}"
+
+# Phase 4 Models - Testing & Quality Assurance
+
+class TestResult(models.Model):
+    """Model for tracking test results and coverage"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    test_name = models.CharField(max_length=200)
+    test_type = models.CharField(max_length=50, choices=[
+        ('unit', 'Unit Test'),
+        ('integration', 'Integration Test'),
+        ('end_to_end', 'End-to-End Test'),
+        ('performance', 'Performance Test'),
+        ('security', 'Security Test'),
+        ('user_acceptance', 'User Acceptance Test'),
+    ])
+    status = models.CharField(max_length=20, choices=[
+        ('passed', 'Passed'),
+        ('failed', 'Failed'),
+        ('skipped', 'Skipped'),
+        ('error', 'Error'),
+    ])
+    execution_time = models.FloatField(help_text="Execution time in seconds")
+    coverage_percentage = models.FloatField(null=True, blank=True)
+    test_output = models.TextField(blank=True)
+    error_details = models.TextField(blank=True)
+    test_environment = models.CharField(max_length=100, blank=True)
+    run_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    run_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-run_at']
+        indexes = [
+            models.Index(fields=['test_type']),
+            models.Index(fields=['status']),
+            models.Index(fields=['run_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.test_name} - {self.status} ({self.test_type})"
+
+class QualityMetric(models.Model):
+    """Model for tracking quality metrics and KPIs"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    metric_name = models.CharField(max_length=100)
+    metric_type = models.CharField(max_length=50, choices=[
+        ('code_quality', 'Code Quality'),
+        ('test_coverage', 'Test Coverage'),
+        ('performance', 'Performance'),
+        ('security', 'Security'),
+        ('usability', 'Usability'),
+        ('accessibility', 'Accessibility'),
+    ])
+    metric_value = models.FloatField()
+    target_value = models.FloatField(null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True)
+    measurement_date = models.DateTimeField(auto_now_add=True)
+    trend = models.CharField(max_length=20, choices=[
+        ('improving', 'Improving'),
+        ('stable', 'Stable'),
+        ('declining', 'Declining'),
+        ('unknown', 'Unknown'),
+    ])
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-measurement_date']
+        indexes = [
+            models.Index(fields=['metric_name']),
+            models.Index(fields=['metric_type']),
+            models.Index(fields=['measurement_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.metric_name}: {self.metric_value} {self.unit}"
+
+class PerformanceTest(models.Model):
+    """Model for tracking performance test results"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    test_name = models.CharField(max_length=200)
+    test_scenario = models.CharField(max_length=100)
+    load_level = models.CharField(max_length=50, choices=[
+        ('low', 'Low Load'),
+        ('medium', 'Medium Load'),
+        ('high', 'High Load'),
+        ('peak', 'Peak Load'),
+        ('stress', 'Stress Test'),
+    ])
+    concurrent_users = models.IntegerField()
+    response_time_avg = models.FloatField(help_text="Average response time in milliseconds")
+    response_time_p95 = models.FloatField(help_text="95th percentile response time")
+    response_time_p99 = models.FloatField(help_text="99th percentile response time")
+    throughput = models.FloatField(help_text="Requests per second")
+    error_rate = models.FloatField(help_text="Error rate percentage")
+    cpu_usage = models.FloatField(help_text="CPU usage percentage")
+    memory_usage = models.FloatField(help_text="Memory usage percentage")
+    test_duration = models.IntegerField(help_text="Test duration in seconds")
+    run_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-run_at']
+        indexes = [
+            models.Index(fields=['test_scenario']),
+            models.Index(fields=['load_level']),
+            models.Index(fields=['run_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.test_name} - {self.load_level} ({self.concurrent_users} users)"
+
+class SecurityTest(models.Model):
+    """Model for tracking security test results"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    test_name = models.CharField(max_length=200)
+    test_category = models.CharField(max_length=50, choices=[
+        ('vulnerability_scan', 'Vulnerability Scan'),
+        ('penetration_test', 'Penetration Test'),
+        ('code_analysis', 'Code Analysis'),
+        ('dependency_check', 'Dependency Check'),
+        ('configuration_audit', 'Configuration Audit'),
+        ('access_control', 'Access Control Test'),
+    ])
+    vulnerability_count = models.IntegerField(default=0)
+    critical_vulnerabilities = models.IntegerField(default=0)
+    high_vulnerabilities = models.IntegerField(default=0)
+    medium_vulnerabilities = models.IntegerField(default=0)
+    low_vulnerabilities = models.IntegerField(default=0)
+    false_positives = models.IntegerField(default=0)
+    remediation_required = models.BooleanField(default=False)
+    test_results = models.JSONField(default=dict)
+    recommendations = models.TextField(blank=True)
+    run_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-run_at']
+        indexes = [
+            models.Index(fields=['test_category']),
+            models.Index(fields=['run_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.test_name} - {self.test_category} ({self.vulnerability_count} vulnerabilities)"
+
+# Phase 4 Models - Documentation & Training
+
+class Documentation(models.Model):
+    """Model for managing project documentation"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    doc_type = models.CharField(max_length=50, choices=[
+        ('user_guide', 'User Guide'),
+        ('api_documentation', 'API Documentation'),
+        ('deployment_guide', 'Deployment Guide'),
+        ('troubleshooting', 'Troubleshooting Guide'),
+        ('faq', 'FAQ'),
+        ('changelog', 'Changelog'),
+        ('architecture', 'Architecture Documentation'),
+    ])
+    language = models.CharField(max_length=10, choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    version = models.CharField(max_length=20, default='1.0')
+    is_published = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['doc_type']),
+            models.Index(fields=['language']),
+            models.Index(fields=['is_published']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.doc_type} v{self.version}"
+
+class TrainingMaterial(models.Model):
+    """Model for managing user training materials"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    material_type = models.CharField(max_length=50, choices=[
+        ('video', 'Video Tutorial'),
+        ('interactive', 'Interactive Tutorial'),
+        ('step_by_step', 'Step-by-Step Guide'),
+        ('cheat_sheet', 'Cheat Sheet'),
+        ('best_practices', 'Best Practices'),
+        ('case_study', 'Case Study'),
+    ])
+    difficulty_level = models.CharField(max_length=20, choices=[
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+        ('expert', 'Expert'),
+    ])
+    estimated_duration = models.IntegerField(help_text="Estimated duration in minutes")
+    language = models.CharField(max_length=10, choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['difficulty_level', 'title']
+        indexes = [
+            models.Index(fields=['material_type']),
+            models.Index(fields=['difficulty_level']),
+            models.Index(fields=['language']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.difficulty_level} ({self.material_type})"
+
+class UserGuide(models.Model):
+    """Model for managing user guides and tutorials"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    guide_type = models.CharField(max_length=50, choices=[
+        ('getting_started', 'Getting Started'),
+        ('feature_guide', 'Feature Guide'),
+        ('workflow', 'Workflow Guide'),
+        ('troubleshooting', 'Troubleshooting'),
+        ('tips_tricks', 'Tips & Tricks'),
+        ('advanced_usage', 'Advanced Usage'),
+    ])
+    target_audience = models.CharField(max_length=50, choices=[
+        ('end_user', 'End User'),
+        ('administrator', 'Administrator'),
+        ('developer', 'Developer'),
+        ('business_user', 'Business User'),
+    ])
+    language = models.CharField(max_length=10, choices=[
+        ('en', 'English'),
+        ('ta', 'Tamil'),
+        ('si', 'Sinhala'),
+    ])
+    version = models.CharField(max_length=20, default='1.0')
+    is_published = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['guide_type', 'title']
+        indexes = [
+            models.Index(fields=['guide_type']),
+            models.Index(fields=['target_audience']),
+            models.Index(fields=['language']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.guide_type} ({self.target_audience})"
+
+class SupportTicket(models.Model):
+    """Model for managing support tickets and issues"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='support_tickets')
+    subject = models.CharField(max_length=200)
+    description = models.TextField()
+    ticket_type = models.CharField(max_length=50, choices=[
+        ('bug_report', 'Bug Report'),
+        ('feature_request', 'Feature Request'),
+        ('technical_support', 'Technical Support'),
+        ('user_guide', 'User Guide Request'),
+        ('billing', 'Billing Issue'),
+        ('general', 'General Inquiry'),
+    ])
+    priority = models.CharField(max_length=20, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ])
+    status = models.CharField(max_length=20, choices=[
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('waiting_for_user', 'Waiting for User'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ])
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tickets')
+    resolution = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['priority']),
+            models.Index(fields=['ticket_type']),
+        ]
+    
+    def __str__(self):
+        return f"#{self.id} - {self.subject} ({self.status})"
+
+# Phase 4 Models - Launch Preparation
+
+class ProductionEnvironment(models.Model):
+    """Model for managing production environment configuration"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    environment_name = models.CharField(max_length=100, unique=True)
+    environment_type = models.CharField(max_length=50, choices=[
+        ('development', 'Development'),
+        ('staging', 'Staging'),
+        ('production', 'Production'),
+        ('testing', 'Testing'),
+    ])
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Active'),
+        ('maintenance', 'Maintenance'),
+        ('decommissioned', 'Decommissioned'),
+        ('error', 'Error'),
+    ])
+    infrastructure_details = models.JSONField(default=dict)
+    configuration = models.JSONField(default=dict)
+    monitoring_enabled = models.BooleanField(default=True)
+    alerting_enabled = models.BooleanField(default=True)
+    backup_enabled = models.BooleanField(default=True)
+    last_deployment = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['environment_name']
+    
+    def __str__(self):
+        return f"{self.environment_name} - {self.environment_type} ({self.status})"
+
+class MonitoringAlert(models.Model):
+    """Model for managing monitoring alerts and notifications"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    alert_name = models.CharField(max_length=200)
+    alert_type = models.CharField(max_length=50, choices=[
+        ('performance', 'Performance Alert'),
+        ('security', 'Security Alert'),
+        ('availability', 'Availability Alert'),
+        ('error_rate', 'Error Rate Alert'),
+        ('resource_usage', 'Resource Usage Alert'),
+        ('custom', 'Custom Alert'),
+    ])
+    severity = models.CharField(max_length=20, choices=[
+        ('info', 'Info'),
+        ('warning', 'Warning'),
+        ('error', 'Error'),
+        ('critical', 'Critical'),
+    ])
+    message = models.TextField()
+    metric_value = models.FloatField(null=True, blank=True)
+    threshold_value = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Active'),
+        ('acknowledged', 'Acknowledged'),
+        ('resolved', 'Resolved'),
+        ('suppressed', 'Suppressed'),
+    ])
+    acknowledged_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['alert_type']),
+            models.Index(fields=['severity']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.alert_name} - {self.severity} ({self.status})"
+
+class BackupRecord(models.Model):
+    """Model for tracking backup operations and status"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    backup_name = models.CharField(max_length=200)
+    backup_type = models.CharField(max_length=50, choices=[
+        ('database', 'Database Backup'),
+        ('files', 'File Backup'),
+        ('configuration', 'Configuration Backup'),
+        ('full_system', 'Full System Backup'),
+        ('incremental', 'Incremental Backup'),
+    ])
+    status = models.CharField(max_length=20, choices=[
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('verification_pending', 'Verification Pending'),
+        ('verified', 'Verified'),
+        ('corrupted', 'Corrupted'),
+    ])
+    file_size_mb = models.FloatField(null=True, blank=True)
+    backup_location = models.CharField(max_length=500)
+    checksum = models.CharField(max_length=128, blank=True)
+    compression_ratio = models.FloatField(null=True, blank=True)
+    retention_days = models.IntegerField(default=30)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['backup_type']),
+            models.Index(fields=['status']),
+            models.Index(fields=['started_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.backup_name} - {self.backup_type} ({self.status})"
+
+class UserOnboarding(models.Model):
+    """Model for managing user onboarding processes"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='onboarding_records')
+    onboarding_stage = models.CharField(max_length=50, choices=[
+        ('welcome', 'Welcome'),
+        ('profile_setup', 'Profile Setup'),
+        ('feature_tour', 'Feature Tour'),
+        ('first_document', 'First Document'),
+        ('training_completed', 'Training Completed'),
+        ('onboarding_completed', 'Onboarding Completed'),
+    ])
+    stage_completed = models.BooleanField(default=False)
+    completion_date = models.DateTimeField(null=True, blank=True)
+    time_spent_minutes = models.IntegerField(default=0)
+    help_requests = models.IntegerField(default=0)
+    satisfaction_score = models.IntegerField(null=True, blank=True, choices=[
+        (1, 'Very Dissatisfied'),
+        (2, 'Dissatisfied'),
+        (3, 'Neutral'),
+        (4, 'Satisfied'),
+        (5, 'Very Satisfied'),
+    ])
+    feedback = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['user', 'onboarding_stage']
+        unique_together = ['user', 'onboarding_stage']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.onboarding_stage} ({'Completed' if self.stage_completed else 'Pending'})"
