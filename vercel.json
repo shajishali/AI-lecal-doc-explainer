@@ -1,0 +1,23 @@
+{
+  "builds": [
+    {
+      "src": "AI_Legal_Explainer/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "AI_Legal_Explainer/wsgi.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": ".",
+    "DJANGO_SETTINGS_MODULE": "AI_Legal_Explainer.settings"
+  },
+  "functions": {
+    "AI_Legal_Explainer/wsgi.py": {
+      "runtime": "python3.9"
+    }
+  }
+}

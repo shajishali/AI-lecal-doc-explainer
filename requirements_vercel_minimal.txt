@@ -1,0 +1,12 @@
+# Core Django - minimal version
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
+# Basic utilities only
+python-decouple==3.8
+requests==2.31.0
+
+# No problematic packages
+# Removed: mysqlclient, cryptography, Pillow, PyPDF2, python-docx
+# Removed: openai, google-generativeai, sentry-sdk, django-ratelimit
