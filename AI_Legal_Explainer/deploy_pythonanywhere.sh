@@ -112,3 +112,5 @@ print_status "3. Update WSGI configuration file"
 print_status "4. Reload your web app"
 print_status ""
 print_status "For detailed instructions, see: PYTHONANYWHERE_DEPLOYMENT.md"
+
+

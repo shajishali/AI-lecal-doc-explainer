@@ -9,7 +9,6 @@ import json
 import logging
 from typing import List, Dict, Tuple, Optional
 from datetime import datetime
-import numpy as np
 
 # Simplified imports - remove heavy AI libraries
 from django.conf import settings

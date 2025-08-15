@@ -9,7 +9,6 @@ import json
 import logging
 from typing import List, Dict, Tuple, Optional
 from datetime import datetime
-import numpy as np
 
 from django.conf import settings
 from .models import Document, Clause, RiskAnalysis, DocumentSummary, LegalTerm

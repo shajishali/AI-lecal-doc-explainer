@@ -17,3 +17,5 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'AI_Legal_Explainer.settings')
 # Import Django WSGI application
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
+
+
